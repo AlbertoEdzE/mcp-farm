@@ -1,0 +1,39 @@
+{
+  "name": "test-virtual-server",
+  "description": "Speak according south recently future choice whatever from behavior.",
+  "tools": [
+    {
+      "name": "tool-alpha",
+      "description": "Grow gas enough analysis least by two bad.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Stop peace technology officer relate."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "tool-beta",
+      "description": "Product significant world talk term herself law.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "entity_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Class great prove reduce raise author."
+          }
+        },
+        "required": [
+          "entity_id"
+        ]
+      }
+    }
+  ]
+}

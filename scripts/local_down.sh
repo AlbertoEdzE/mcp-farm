@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
-# Planned for: Cluster C1 — Local Environment (MF-E02-T03)
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 print_usage() {
     echo "Usage: $(basename "$0") [--help]"
     echo ""
-    echo "Stop the local Docker Compose stack and remove volumes."
-    echo "Planned for: Cluster C1 — Local Environment"
-    echo "Ticket: MF-E02-T03"
+    echo "Stop the local Docker Compose stack and remove all volumes."
+    echo "Idempotent: safe to run when the stack is already stopped."
+    echo ""
+    echo "Options:"
+    echo "  --help  Print this message and exit"
+    echo ""
+    echo "Note: volumes are removed (-v flag). Local PostgreSQL data is not preserved."
+    echo "This ensures a clean state on the next local-up."
 }
 
 if [[ "${1:-}" == "--help" ]]; then
@@ -15,7 +22,11 @@ if [[ "${1:-}" == "--help" ]]; then
     exit 0
 fi
 
-echo "ERROR: local_down.sh is not yet implemented."
-echo "Planned for: Cluster C1 — Local Environment (MF-E02-T03)"
-echo "See doc/Plan.md for implementation details."
-exit 1
+echo "--- MCP Farm: local-down ---"
+echo ""
+
+cd "$REPO_ROOT"
+
+docker compose down -v 2>&1 || true
+
+echo "Stack stopped. All containers and volumes removed."

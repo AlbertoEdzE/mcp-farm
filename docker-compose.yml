@@ -1,0 +1,64 @@
+services:
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${CLOUDSQL_DATABASE_NAME:-contextforge}
+      POSTGRES_USER: ${CLOUDSQL_USER}
+      POSTGRES_PASSWORD: ${CLOUDSQL_PASSWORD}
+    ports:
+      - "${LOCAL_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CLOUDSQL_USER} -d ${CLOUDSQL_DATABASE_NAME:-contextforge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7
+    ports:
+      - "${LOCAL_REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  contextforge:
+    # Image is resolved when Q1 is answered. See doc/Specify.md Section 15.
+    # Until Q1 is resolved, start only postgres and redis:
+    #   docker compose up -d postgres redis
+    image: "${CF_IMAGE_URI}:${CF_IMAGE_TAG}"
+    ports:
+      - "${LOCAL_CF_GATEWAY_PORT:-8080}:8080"
+      - "${LOCAL_CF_REGISTRY_PORT:-8081}:8081"
+    environment:
+      CF_EXPOSE_CONTAINER_PORT: "${CF_EXPOSE_CONTAINER_PORT:-true}"
+      CLOUDSQL_DATABASE_NAME: "${CLOUDSQL_DATABASE_NAME:-contextforge}"
+      CLOUDSQL_USER: "${CLOUDSQL_USER}"
+      CLOUDSQL_PASSWORD: "${CLOUDSQL_PASSWORD}"
+      # Internal docker network connection string — overrides .env value for this container.
+      # ContextForge connects to the postgres service name, not localhost.
+      CLOUDSQL_CONNECTION_STRING: "postgresql://${CLOUDSQL_USER}:${CLOUDSQL_PASSWORD}@postgres:5432/${CLOUDSQL_DATABASE_NAME:-contextforge}"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # Health check path is confirmed in Cluster C2 (MF-E03-T02).
+      # /health is the assumed path per the deployment.yaml liveness probe.
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:
+    driver: local

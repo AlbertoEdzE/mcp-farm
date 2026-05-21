@@ -1,0 +1,19 @@
+{
+  "name": "test-gitlab-proxy",
+  "description": "Agent every development say quality.",
+  "url": "https://gitlab.miller.com/api/mcp/v1",
+  "transport": "sse",
+  "auth": {
+    "type": "oauth2",
+    "token_endpoint": "https://gitlab.wagner.net/oauth/token",
+    "client_id": "b38a088c-a65e-4389-b74d-0fb132e70629",
+    "scopes": [
+      "read_api",
+      "read_repository"
+    ]
+  },
+  "metadata": {
+    "created_by": "lrobinson",
+    "purpose": "integration-test"
+  }
+}
