@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contextforge
+  namespace: mcp-farm
+  labels:
+    app: contextforge
+    project: mcp-farm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: contextforge
+  template:
+    metadata:
+      labels:
+        app: contextforge
+    spec:
+      imagePullSecrets:
+        - name: ibm-entitlement-key
+      containers:
+        - name: contextforge
+          # Image is patched at deploy time by gke_deploy.sh using:
+          #   kubectl set image deployment/contextforge contextforge="${CF_IMAGE_URI}:${CF_IMAGE_TAG}"
+          # Placeholder satisfies kubectl dry-run validation before deployment.
+          image: "placeholder/contextforge:placeholder"
+          ports:
+            - name: gateway
+              containerPort: 8080
+              protocol: TCP
+            - name: registry
+              containerPort: 8081
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: contextforge-config
+          env:
+            - name: CLOUDSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: contextforge-db-credentials
+                  key: CLOUDSQL_USER
+            - name: CLOUDSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: contextforge-db-credentials
+                  key: CLOUDSQL_PASSWORD
+            - name: CLOUDSQL_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: contextforge-db-credentials
+                  key: CLOUDSQL_CONNECTION_STRING
+            - name: REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: contextforge-redis-credentials
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: contextforge-redis-credentials
+                  key: REDIS_PORT
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"

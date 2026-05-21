@@ -216,3 +216,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# MCP Farm — project-specific ignores
+.env
+.venv/
+reports/
+kubeconfig
+*-credentials.json
+service-account.json
+*.key
+*.pem
+config/contextforge.yaml
+config/gke.yaml
+k8s/secrets.yaml

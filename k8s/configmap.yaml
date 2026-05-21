@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: contextforge-config
+  namespace: mcp-farm
+  labels:
+    app: contextforge
+    project: mcp-farm
+data:
+  # Non-sensitive ContextForge configuration.
+  # Sensitive values (credentials) are in Secrets, not here.
+  CF_GATEWAY_PORT: "8080"
+  CF_REGISTRY_PORT: "8081"
+  # expose_container_port must be true. See doc/ADR/ADR-001-gke-over-cloud-run.md.
+  CF_EXPOSE_CONTAINER_PORT: "true"
+  # Additional keys are added in Cluster C3 (MF-E04-T02) once Q3 is resolved.

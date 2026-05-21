@@ -1,0 +1,50 @@
+# ContextForge configuration template
+# Copy to config/contextforge.yaml and populate with real values.
+# config/contextforge.yaml is never committed. This file is committed.
+# Values shown as "${VAR_NAME}" are read from environment variables at runtime.
+
+gateway:
+  port: "${CF_GATEWAY_PORT}"
+  # expose_container_port must be true for the gateway to bind and expose its port.
+  # This was the root cause of the Cloud Run deployment failure on 2026-05-20.
+  # See doc/ADR/ADR-001-gke-over-cloud-run.md for full context.
+  # The exact configuration key is resolved in Cluster C2 (MF-E03-T01).
+  expose_container_port: "${CF_EXPOSE_CONTAINER_PORT}"
+
+registry:
+  port: "${CF_REGISTRY_PORT}"
+
+database:
+  connection_string: "${CLOUDSQL_CONNECTION_STRING}"
+  database_name: "${CLOUDSQL_DATABASE_NAME}"
+  user: "${CLOUDSQL_USER}"
+  password: "${CLOUDSQL_PASSWORD}"
+
+cache:
+  host: "${REDIS_HOST}"
+  port: "${REDIS_PORT}"
+
+proxy:
+  # MCP proxy definitions are added in Cluster C4 (EPIC-MF-E05).
+  # Format reference:
+  # - name: <proxy-identifier>
+  #   url: <mcp-server-url>
+  #   transport: sse | streamable_http
+  #   auth:
+  #     type: oauth2
+  #     client_id: "${GITLAB_OAUTH_CLIENT_ID}"
+  #     client_secret: "${GITLAB_OAUTH_CLIENT_SECRET}"
+
+virtual_servers:
+  # Virtual server definitions are added in Cluster C5 (EPIC-MF-E06).
+  # Format reference:
+  # - name: "${VIRTUAL_SERVER_NAME}"
+  #   tools:
+  #     - name: tool-alpha
+  #       description: <tool description>
+  #       input_schema:
+  #         type: object
+  #         properties:
+  #           query:
+  #             type: string
+  #         required: [query]

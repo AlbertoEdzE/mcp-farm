@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: contextforge-ingress
+  namespace: mcp-farm
+  labels:
+    app: contextforge
+    project: mcp-farm
+  annotations:
+    # GKE-managed external Application Load Balancer.
+    # Requires GKE Ingress controller (enabled by default on GKE).
+    # The exact ingress class and annotations are confirmed in Cluster C3 (MF-E04-T02)
+    # once Q6 (GKE node type and configuration) is resolved.
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: contextforge-svc
+                port:
+                  number: 8080

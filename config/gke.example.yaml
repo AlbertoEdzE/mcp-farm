@@ -1,0 +1,27 @@
+# GKE deployment parameters template
+# Copy to config/gke.yaml and populate with real values.
+# config/gke.yaml is never committed. This file is committed.
+# Values shown as "${VAR_NAME}" are read from environment variables at runtime.
+# All parameter values are resolved in Cluster C3 (EPIC-MF-E04, ticket MF-E04-T01).
+
+cluster:
+  name: "${GKE_CLUSTER_NAME}"
+  project: "${GCP_PROJECT_ID}"
+  region: "${GCP_REGION}"
+  zone: "${GCP_ZONE}"
+  node_machine_type: "${GKE_NODE_MACHINE_TYPE}"
+  node_count: "${GKE_NODE_COUNT}"
+
+namespace: "${GKE_NAMESPACE}"
+
+cloud_sql:
+  instance_name: "${CLOUDSQL_INSTANCE_NAME}"
+  database_name: "${CLOUDSQL_DATABASE_NAME}"
+  # Tier is resolved when Q6 is answered (MF-E04-T01).
+  # Default assumption per Specify.md A3: db-f1-micro
+  tier: "db-f1-micro"
+
+memorystore:
+  instance_name: "${MEMORYSTORE_INSTANCE_NAME}"
+  tier: "BASIC"
+  size_gb: 1
