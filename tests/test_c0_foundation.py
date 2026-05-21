@@ -113,6 +113,7 @@ REQUIRED_MAKEFILE_TARGETS: list[str] = [
     "typecheck",
     "generate-data",
     "register-proxy",
+    "create-virtual-server",
     "clean",
 ]
 

@@ -1,5 +1,5 @@
 .PHONY: help install local-up local-down gke-provision gke-deploy gke-teardown \
-        test lint typecheck generate-data register-proxy clean
+        test lint typecheck generate-data register-proxy create-virtual-server clean
 
 SHELL  := /bin/bash
 CLUSTER ?= all
@@ -40,6 +40,9 @@ generate-data: ## Generate deterministic synthetic test data fixtures
 
 register-proxy: ## Register the GitLab MCP proxy with the running ContextForge Config Registry
 	@.venv/bin/python scripts/register_proxy.py
+
+create-virtual-server: ## Create the test virtual server in the running ContextForge Config Registry
+	@.venv/bin/python scripts/create_virtual_server.py
 
 clean: ## Remove generated artefacts (__pycache__, .pytest_cache, reports/)
 	@find . -type d -name __pycache__ -not -path './.git/*' -exec rm -rf {} + 2>/dev/null || true

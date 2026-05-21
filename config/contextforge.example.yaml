@@ -45,15 +45,32 @@ proxy:
         - read_repository
 
 virtual_servers:
-  # Virtual server definitions are added in Cluster C5 (EPIC-MF-E06).
-  # Format reference:
-  # - name: "${VIRTUAL_SERVER_NAME}"
-  #   tools:
-  #     - name: tool-alpha
-  #       description: <tool description>
-  #       input_schema:
-  #         type: object
-  #         properties:
-  #           query:
-  #             type: string
-  #         required: [query]
+  # Each virtual server is the access control boundary for one AI agent role.
+  # Tools reference registered MCP proxies. See doc/ADR/ADR-004.
+  # The exact proxy reference key is confirmed when Q1 is resolved.
+  - name: "${VIRTUAL_SERVER_NAME}"
+    description: Baptist Health AI platform — governed tool access point
+    tools:
+      - proxy: gitlab-mcp
+        name: tool-alpha
+        description: Code search and repository query tool
+        input_schema:
+          type: object
+          properties:
+            query:
+              type: string
+              description: Search query string
+          required:
+            - query
+      - proxy: gitlab-mcp
+        name: tool-beta
+        description: Entity lookup by identifier
+        input_schema:
+          type: object
+          properties:
+            entity_id:
+              type: string
+              format: uuid
+              description: UUID of the entity to retrieve
+          required:
+            - entity_id
