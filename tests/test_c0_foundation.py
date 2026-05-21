@@ -112,6 +112,7 @@ REQUIRED_MAKEFILE_TARGETS: list[str] = [
     "lint",
     "typecheck",
     "generate-data",
+    "register-proxy",
     "clean",
 ]
 

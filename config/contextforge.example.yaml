@@ -28,15 +28,21 @@ cache:
   port: "${REDIS_PORT}"
 
 proxy:
-  # MCP proxy definitions are added in Cluster C4 (EPIC-MF-E05).
-  # Format reference:
-  # - name: <proxy-identifier>
-  #   url: <mcp-server-url>
-  #   transport: sse | streamable_http
-  #   auth:
-  #     type: oauth2
-  #     client_id: "${GITLAB_OAUTH_CLIENT_ID}"
-  #     client_secret: "${GITLAB_OAUTH_CLIENT_SECRET}"
+  # Static OAuth 2.0 registration assumed per ADR-003.
+  # Q4: Confirm with Bala whether the GitLab instance requires dynamic registration.
+  - name: gitlab-mcp
+    description: GitLab MCP server — code repository and CI/CD tools
+    url: "${GITLAB_MCP_URL}"
+    transport: sse
+    auth:
+      type: oauth2
+      # Assumed token endpoint path — verify from GitLab instance docs when Q4 is resolved.
+      token_endpoint: "${GITLAB_MCP_URL}/oauth/token"
+      client_id: "${GITLAB_OAUTH_CLIENT_ID}"
+      client_secret: "${GITLAB_OAUTH_CLIENT_SECRET}"
+      scopes:
+        - read_api
+        - read_repository
 
 virtual_servers:
   # Virtual server definitions are added in Cluster C5 (EPIC-MF-E06).
