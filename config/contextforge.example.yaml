@@ -5,14 +5,17 @@
 
 gateway:
   port: "${CF_GATEWAY_PORT}"
+  # Health endpoint path. Assumed /health — confirm when Q1 is resolved.
+  health_path: "${CF_GATEWAY_HEALTH_PATH}"
   # expose_container_port must be true for the gateway to bind and expose its port.
   # This was the root cause of the Cloud Run deployment failure on 2026-05-20.
   # See doc/ADR/ADR-001-gke-over-cloud-run.md for full context.
-  # The exact configuration key is resolved in Cluster C2 (MF-E03-T01).
   expose_container_port: "${CF_EXPOSE_CONTAINER_PORT}"
 
 registry:
   port: "${CF_REGISTRY_PORT}"
+  # Health endpoint path. Assumed /health — confirm when Q1 is resolved.
+  health_path: "${CF_REGISTRY_HEALTH_PATH}"
 
 database:
   connection_string: "${CLOUDSQL_CONNECTION_STRING}"

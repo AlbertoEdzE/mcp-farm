@@ -1,0 +1,271 @@
+
+[00:00:00.000 --> 00:00:06.240]   the architecture, we had a lot of clarity. So I wanted to bring up and see like what kind of
+[00:00:06.240 --> 00:00:16.560]   questions we have and what is the way forward to implement it. Yeah, understood. So, Ashim.
+[00:00:17.680 --> 00:00:33.520]   Yeah, I will share my screen. But before you present, I hope I am audible. Yes.
+[00:00:33.520 --> 00:00:45.040]   So, what happened was I did sync up with Cache. So context for contextful, I will share my screen.
+[00:00:45.040 --> 00:00:55.040]   So this is a context for production architecture. For production scale, this is how the typical
+[00:00:55.040 --> 00:01:02.240]   deployment architecture for context force. The very high level, context force has two different
+[00:01:02.240 --> 00:01:12.320]   components. One is the actual gateway, AI gateway, and other one is to manage the configuration in
+[00:01:12.320 --> 00:01:18.080]   the registry of the MCP server, right? So that is where this post with SQL and Redis is required.
+[00:01:18.080 --> 00:01:29.200]   And then the actual AI gateway to be exposed either through ingress and reverse proxy or the
+[00:01:29.200 --> 00:01:36.320]   container port. If we just deploy it as a container, not in the pod. So, you know, you
+[00:01:36.320 --> 00:01:41.920]   need to enable it. There is a setting that you need to enable to be able to expose. So when I
+[00:01:41.920 --> 00:01:49.920]   reviewed what Cache ship actually deployed onto the Google cloud run, it just installed
+[00:01:49.920 --> 00:01:54.480]   within the cloud run, right? But not as a container port and exposing.
+[00:01:54.480 --> 00:02:01.280]   Exposing, there is a setting that has to be enabled. We ran through the details of what
+[00:02:01.280 --> 00:02:07.840]   settings were missed. So that's the reason couldn't expose that the context was.
+[00:02:08.560 --> 00:02:14.800]   So I just want to give a glimpse of what happened and how this needs to be set up.
+[00:02:14.800 --> 00:02:20.320]   Ideally, this needs to be set up for a production layer. At least we want to do some kind of
+[00:02:20.320 --> 00:02:26.000]   piloting also. In the Kubernetes cluster, you need to have for a persistent post with SQL.
+[00:02:26.000 --> 00:02:32.080]   And then you need to have a context force for where you have both proxy
+[00:02:33.520 --> 00:02:41.120]   for all the different mcp agents. And we can also have a virtual service which also
+[00:02:41.120 --> 00:02:45.920]   has an additional configuration and the registry of all the mcp's and tools.
+[00:02:45.920 --> 00:02:55.040]   I just want to give a glimpse. And then what I request Cache ship is to set up all the
+[00:02:55.040 --> 00:03:02.320]   capabilities in the local fast so that the same thing can be replicated into the
+[00:03:02.320 --> 00:03:07.840]   Kubernetes or we Google cloud run is also possible. I'm not saying that that is not possible,
+[00:03:07.840 --> 00:03:10.480]   but I'll show you one thing, right?
+[00:03:25.920 --> 00:03:45.360]   This database setting, we did, we took it to the option of not to persistent store.
+[00:03:45.360 --> 00:03:46.800]   And once it is deployed,
+[00:03:50.480 --> 00:03:57.760]   this is an access, more of an access. And there is a setting, right? To enable it.
+[00:03:57.760 --> 00:04:10.560]   This is where we have to enable the Google API. This step could not perform. So he hijacked it
+[00:04:10.560 --> 00:04:16.000]   and just made the container work. So that's the reason he was facing that issue.
+[00:04:16.800 --> 00:04:25.920]   So I just asked him to set up in the local and then better we set that up on the Kubernetes.
+[00:04:25.920 --> 00:04:31.280]   So what is the advantage of, I just take one more minute and I leave the floor open.
+[00:04:31.280 --> 00:04:36.800]   So what's the advantage of following this architecture?
+[00:04:39.200 --> 00:04:44.800]   One is, see, this definitely, rather than posters as fuel, we can definitely go with
+[00:04:44.800 --> 00:04:50.880]   the cloud or SQL. That's not an issue. And same way that the server is caching.
+[00:04:50.880 --> 00:05:02.880]   But in case in future, if you want to spin up our own MCP servers or for example,
+[00:05:02.880 --> 00:05:07.600]   this is a runtime for the rest, anything in the, within the coconut space, if you want to
+[00:05:08.240 --> 00:05:14.320]   really, you know, talk to some kind of other utilities, so on, so forth, it is much easier.
+[00:05:14.320 --> 00:05:20.480]   That's the only reason they also have this. Go ahead.
+[00:05:20.480 --> 00:05:29.520]   Lakshman, I agree with the way you mentioned about deploying the application, but the storage
+[00:05:29.520 --> 00:05:34.240]   should not be in GK. It will be a hell of management for us. We should be using the
+[00:05:34.240 --> 00:05:38.240]   serverless cache and also the serverless storage for this.
+[00:05:38.240 --> 00:05:45.200]   100% in. These two should be like cloud SQL. They are just because that architecture they
+[00:05:45.200 --> 00:05:55.760]   presented at PostgreSQL, but we can use cloud SQL. I don't think that's the problem.
+[00:05:55.760 --> 00:06:00.720]   Only thing is the way you have to expose, see, if it is not in the Kubernetes cluster,
+[00:06:01.760 --> 00:06:05.840]   Google Cloud Run, you have to enable that API, but that was not done.
+[00:06:05.840 --> 00:06:08.080]   See, that's the reason they were facing some issues.
+[00:06:08.080 --> 00:06:13.440]   Okay. I'll just leave it to Kashyap.
+[00:06:32.720 --> 00:06:39.680]   Yes. As we discussed yesterday, I added multiple tools to just see the capability of context
+[00:06:39.680 --> 00:06:44.480]   force. So I added multiple tools, multiple, I created some virtual servers, which was not
+[00:06:44.480 --> 00:06:50.480]   possible in yesterday's demo, and I created some NCP servers as well.
+[00:06:50.480 --> 00:06:55.840]   So I added some NCP servers that are local ones, like having face cloud free. These are all the
+[00:06:55.840 --> 00:07:02.800]   local ones that I added and just, I just wanted to check if we can use as NCP farm as Jeffrey
+[00:07:02.800 --> 00:07:09.360]   was mentioning. So we can use this as NCP farm and there was a question yesterday.
+[00:07:09.360 --> 00:07:15.680]   Can we use a custom proxy NCP servers inside the context force? I think that was the question, right?
+[00:07:15.680 --> 00:07:23.680]   So on that question, that is a general purpose of context force and we can do that and we can
+[00:07:23.680 --> 00:07:31.120]   use and we can govern on those NCP servers as well. As to the issue I was facing was
+[00:07:31.120 --> 00:07:35.680]   there was no option to create any virtual servers. Virtual servers are nothing but in
+[00:07:35.680 --> 00:07:44.480]   this scenario for context force. We are creating a set of tools. We are taking set of tools inside
+[00:07:44.480 --> 00:07:54.720]   a NCP like bundling that demo in one thing that's called a virtual server and this virtual server
+[00:07:54.720 --> 00:08:02.960]   can be exposed as an NCP server. Even though the tools inside are not NCP related, we are creating
+[00:08:02.960 --> 00:08:08.000]   those tools and we are creating the NCP custom NCP servers here. That is the virtual server that
+[00:08:08.000 --> 00:08:14.080]   is mentioned here. So here you can see we added six tools for this cloud platform. These are all
+[00:08:14.080 --> 00:08:20.640]   named by me and there are three tools using their six tools. So I added 18 tools here completely.
+[00:08:20.640 --> 00:08:27.680]   Just check how like what are the multiple things that we can do. Like I just wanted to explore a
+[00:08:27.680 --> 00:08:33.520]   lot and I just did this. You can see these are all the models I think phases are all the public
+[00:08:33.520 --> 00:08:43.520]   models and I created 18 of them and added bundled them like for 6, 3 and 4 tools inside one virtual
+[00:08:43.520 --> 00:08:51.840]   server and we can use those servers into NCP server and we can expose them. So the next step
+[00:08:51.840 --> 00:08:59.280]   for this can be like what I can do is I can push this into the grid cloud that we have and from
+[00:08:59.280 --> 00:09:05.840]   there I think it is easier right for now. What do you think you should check?
+[00:09:08.480 --> 00:09:17.280]   See when it comes to say what Bala was trying to integrate right, the Snowflake MCP server
+[00:09:17.280 --> 00:09:26.320]   for Alberto is working on the BitLab MCP server right. Those NCP servers itself are hosted on
+[00:09:26.320 --> 00:09:35.040]   the vendor side right. So if we have to show them here how is that we need to do?
+[00:09:36.480 --> 00:09:46.080]   It follows the proxy pattern. So you have to create an MCP here and add the respective IP and
+[00:09:46.080 --> 00:09:53.760]   details of BitLab or you know the Snowflake and that will be exposed. See this acts as a gateway.
+[00:09:53.760 --> 00:10:02.320]   So it will be like for APIs how we have this APG as a gateway. This will be like a gateway for
+[00:10:02.960 --> 00:10:07.360]   any kind of MCPs right. We can host our own MCPs here and if there is an MCP
+[00:10:07.360 --> 00:10:15.600]   that is hosted by the vendor like the GitLab and Snowflake example we can use this as a proxy
+[00:10:15.600 --> 00:10:21.200]   and look up registry and any kind of authentication management all that we can do here right.
+[00:10:21.200 --> 00:10:30.640]   Absolutely. So this acts as a proxy and even for the other gateways some of for example Google has
+[00:10:31.360 --> 00:10:40.240]   the AI gateway or let's say there is a gateway on AWS other NCP gateways. It also acts as a
+[00:10:40.240 --> 00:10:47.600]   federation so that you can have one centralized registry for an enterprise level using which
+[00:10:47.600 --> 00:10:56.880]   you can discover to not expose. So then let's do this right. Set this up you are saying you are
+[00:10:56.880 --> 00:11:05.360]   doing some testing locally right. Try to do some quick test locally to make sure all this works
+[00:11:05.360 --> 00:11:11.600]   as per the design right. Move into the setup and Kubernetes cluster in our
+[00:11:11.600 --> 00:11:21.600]   sandbox that we have set up right. GCP sandbox. Okay and in that then start sitting up proxies for
+[00:11:22.400 --> 00:11:29.760]   our own hosted MCPs. Some test MCPs that we can create and for GitLab and Snowflake.
+[00:11:29.760 --> 00:11:35.520]   I'll try to put it here and see how this is going to work. So it will be like a working model that
+[00:11:35.520 --> 00:11:46.560]   we'll have right. Okay sure sure. Understood. Yeah let's plan it that way so that we'll move
+[00:11:46.560 --> 00:11:54.720]   towards our target state what we are looking at. It is not too feasible it is only for experimentation
+[00:11:54.720 --> 00:12:02.000]   but Kubernetes cluster is the way to go for production grade the proxy right. Production
+[00:12:02.000 --> 00:12:09.680]   grade gateway. Then I think we should move towards the target state. Okay yeah make some yeah.
+[00:12:10.560 --> 00:12:17.680]   Yeah so you are about to say something right. Yeah so I since Lakshman is here I just wanted
+[00:12:17.680 --> 00:12:23.680]   to talk about the type of use cases we'll be testing out in the pilot phase. So one thing I see is
+[00:12:23.680 --> 00:12:29.680]   that OAuth 2 is the common pattern for enterprise integration. So we should try out with one OAuth
+[00:12:29.680 --> 00:12:35.760]   I mean one gateway where OAuth is required. GitLab would be a good example. Similarly Snowflake would
+[00:12:35.760 --> 00:12:42.800]   be. One we can try out where we have an in-house MCP. One where the virtual server is created inside
+[00:12:42.800 --> 00:12:50.720]   the MCP I mean Context Forge itself. Other than that Lakshman any other use case we should be
+[00:12:50.720 --> 00:12:59.520]   trying out which is a usual integration pattern. Yeah so let me share my screen right. This is how
+[00:13:00.080 --> 00:13:15.840]   it is. It can review other type of usability.
+[00:13:30.080 --> 00:13:54.960]   I think this is also there. We updated this in the compliance phase but since it's not
+[00:13:57.520 --> 00:14:03.280]   just in the interest of time I opened what I have this that day I updated into the compliance.
+[00:14:03.280 --> 00:14:13.280]   See these are the different scenarios right. One we are covering this agent to sorry MCP to
+[00:14:13.280 --> 00:14:20.960]   HTTP or one we are covering but I would recommend at least it depends on the time but to have at
+[00:14:20.960 --> 00:14:27.360]   least one one sample for each of the cases so that you know we cover all the almost all the
+[00:14:27.360 --> 00:14:34.640]   patterns right. For example agent to call an external API for this use case we are doing right
+[00:14:34.640 --> 00:14:42.400]   now the HTTP part. Another one we are doing is MCP proxy. Agent to communicate with an MCP.
+[00:14:42.400 --> 00:14:49.440]   So for that we are exposing an API gateway for an MCP right. But the second one if you see agent
+[00:14:49.440 --> 00:14:55.440]   to call an iterative or a function imagine like you have a module that can be a Python
+[00:14:55.440 --> 00:15:09.680]   do you expose a logic and another one how do you expose a knowledge context a set of files
+[00:15:09.680 --> 00:15:15.680]   like how Microsoft co-pilot has like you have a share point and you expose it in the MCP right.
+[00:15:16.640 --> 00:15:22.320]   And then how do you standardize the prompt template for example we can take impact one example of
+[00:15:22.320 --> 00:15:29.600]   you have an employer related service right that day you did show some money agent architecture
+[00:15:29.600 --> 00:15:38.560]   where definitely you might have some prompts. So how do you enable that prompt registry and reuse
+[00:15:39.840 --> 00:15:47.760]   by exposing the prompt template as an MCP right. Probably every testing we can now ignore
+[00:15:47.760 --> 00:15:55.360]   but the other tools one the composition of the different tools and creating that as an MCP
+[00:15:55.360 --> 00:16:01.760]   one end point for different tools and they expose as a different tools like that I think
+[00:16:01.760 --> 00:16:11.680]   has already done. These are some auxiliary capabilities like you know I shouldn't say
+[00:16:11.680 --> 00:16:18.320]   auxiliary I think we should do it like Chakri mentioned that typically API gateway how do you
+[00:16:18.320 --> 00:16:26.560]   enforce the different policies under Bustman we have to we have to be very clear about how
+[00:16:26.560 --> 00:16:32.880]   do we define the policies and be part of the CICD right be it in caching the limiting
+[00:16:32.880 --> 00:16:42.960]   the allow and so on so forth right and then the also take care of at least the basic monitoring
+[00:16:42.960 --> 00:16:49.040]   you know how and you know the every request that comes to the MCP should be
+[00:16:49.760 --> 00:16:54.800]   monitored to the Google monitoring platform or is what I'm in here.
+[00:16:54.800 --> 00:17:05.840]   Yeah this is good and we need to take use cases and uh write out all these things.
+[00:17:05.840 --> 00:17:10.960]   Yeah so what we do is I work with Divakar and put that into a Jira story we'll update the Jira
+[00:17:10.960 --> 00:17:15.200]   story question probably I'll work with the question so we'll update the Jira story so that
+[00:17:16.320 --> 00:17:28.720]   everyone can flag. Yeah that helps. I also I also pasted the conference page where
+[00:17:28.720 --> 00:17:40.080]   diagram which Laxman showed is embedded. Yeah so I just want to add some context because right now
+[00:17:40.080 --> 00:17:48.800]   we have several you know over MCP available right and then without this the authentication
+[00:17:48.800 --> 00:17:55.680]   you know this is very awkward right so they say then the team has to create another app kind of a
+[00:17:55.680 --> 00:18:04.720]   kind of bridge so every time you know basically to to call the MCP the remote MCP so this thing
+[00:18:04.720 --> 00:18:13.040]   you know if we want really giving to other team to consume this this this this MCP gateway is
+[00:18:13.040 --> 00:18:20.160]   is very very important right and there's an urgency on on this one so I just want to make sure we can
+[00:18:20.160 --> 00:18:28.720]   you know give a full attention right and then you know moving to the the the Google environment and
+[00:18:28.720 --> 00:18:36.320]   then test it out and you know basically to enhance whatever we need right to get it done and then
+[00:18:36.320 --> 00:18:44.960]   then we can set it up and then to really make this MCP server recording you know as an enterprise
+[00:18:44.960 --> 00:18:51.520]   it's not just one team or one of you know kind of efforts right for each of the team so basically
+[00:18:51.520 --> 00:19:03.120]   yeah yeah yeah I just want to get it done in vehicle to time frame you know basically then
+[00:19:03.120 --> 00:19:10.080]   this will become a lot of you know if this pattern exists that this is will make our life much much
+[00:19:10.080 --> 00:19:16.720]   easier for everybody yeah you know what I'm thinking is you can do the interface and control
+[00:19:16.720 --> 00:19:23.440]   plan is there ideally this should be driven by it's not a CI CD and think about it
+[00:19:23.440 --> 00:19:36.400]   but you know it should be automated somewhere you say what what what automated you know set it up
+[00:19:36.400 --> 00:19:45.040]   this this whole contact force yeah one is context force deployment that's one one part of the
+[00:19:45.040 --> 00:19:53.760]   right but other other one is um see it's like a busy right a busy in two years back uh I used to
+[00:19:53.760 --> 00:20:00.880]   you know create it all right a busy and then I'm talking about your API is not the not the
+[00:20:00.880 --> 00:20:06.480]   transformation or um you know we have to configure the policies we have to create it we have to
+[00:20:06.480 --> 00:20:13.760]   create but now if you see right for example if uh if I want to create an API proxy on a busy
+[00:20:14.720 --> 00:20:20.160]   and I have a Java function I'm going to export that as an API right I just need to create the
+[00:20:20.160 --> 00:20:28.320]   configuration in the CI CD pipeline file then API will be automated to create it on the ID right
+[00:20:28.320 --> 00:20:38.880]   that's how I'm imagining that MCP should be a part of a CI CD in some level of pipeline configuration
+[00:20:38.880 --> 00:20:45.360]   so it it should be automated for majority of the use that I'm not sure for how many use cases this
+[00:20:45.360 --> 00:20:52.880]   can be applicable at this moment that's how I'm imagining the API yeah we can try right but but
+[00:20:52.880 --> 00:21:00.480]   right now we have this snowflake and also this kitlab MCP server right this is so remote and
+[00:21:00.480 --> 00:21:12.320]   then but the symbol um authentication you know based on the the you know out that or or or you
+[00:21:12.320 --> 00:21:20.560]   know kind of um you know authentication process right so then that's that's why I think we can
+[00:21:20.560 --> 00:21:26.320]   I don't know you know basically even now it's a manual but it's config and then people go through
+[00:21:26.320 --> 00:21:32.800]   this and then instead of you have to go right now I think Balad demo right and also suggest talk to
+[00:21:32.800 --> 00:21:41.600]   me yesterday and then it's need a pop up a web authentication you know screen right people
+[00:21:41.600 --> 00:21:48.720]   has to authenticate once and then come back to the MCP and then you can run right but it's
+[00:21:48.720 --> 00:21:57.840]   it's it's not a good experience and also this is about a create kind of a hat right and then run this
+[00:21:57.840 --> 00:22:08.400]   kind of um create a kind of cloud run app right to handle this and as a as a you know bridge this
+[00:22:08.400 --> 00:22:15.600]   whole thing so instead of every team every time has to create this a hat and then this all everything
+[00:22:15.600 --> 00:22:19.600]   doing here it should be handled by the gateway that's
+[00:22:19.600 --> 00:22:32.000]   or anything to check real world what are you guys gonna add yeah I think to Lakshman's point right
+[00:22:32.000 --> 00:22:39.600]   while automation I agree is required but for phase one I think we can focus on setting up the
+[00:22:39.600 --> 00:22:48.720]   infrastructure onboarding out of box and custom MCP proxies here making it work
+[00:22:48.720 --> 00:22:55.280]   and phase two definitely we will look at automation and more streamlined onboarding process
+[00:22:55.280 --> 00:23:02.880]   we will do it in a time bound way but phase one will be more like a setup and proving that everything
+[00:23:02.880 --> 00:23:15.520]   is working definitely as we are setting up we may face some challenges but I think if we are actively
+[00:23:15.520 --> 00:23:20.720]   trying to fix things that's where Lakshman I think your guidance will be required for the team where
+[00:23:20.720 --> 00:23:29.680]   implementation wise I think team is doing great they are trying to research take all the instructions
+[00:23:29.680 --> 00:23:35.920]   and do it but sometimes we need strategic direction if there is some design that we
+[00:23:35.920 --> 00:23:43.680]   are deviating and questioning also right we will we will give some direction like if I myself
+[00:23:43.680 --> 00:23:50.000]   suggest we may say something but if it if it is not right I think there should be some kind of
+[00:23:50.000 --> 00:23:56.160]   questioning also right this doesn't look correct and we can discuss and come to a correct solution
+[00:23:56.160 --> 00:24:02.800]   but if we just accept what is being said some lot of times we'll struggle yeah absolutely yeah
+[00:24:02.800 --> 00:24:10.080]   in in fact I'll join see what I can what I also want to what I'm also planning is I'll
+[00:24:10.080 --> 00:24:16.720]   make sure that I'll join and I'll sync up with the team few last few weeks I was in Guyana
+[00:24:16.720 --> 00:24:23.040]   and I thought that it is there is something that is already going on not the new things
+[00:24:24.000 --> 00:24:28.560]   but what I'll do is I'll at least join and see if there is a contest also I'll
+[00:24:28.560 --> 00:24:33.840]   I'll say that I will drop off and all and this is the maximum possible and try
+[00:24:33.840 --> 00:24:42.960]   yeah I think we can utilize your time effectively also maybe if you can join a few days in a week
+[00:24:42.960 --> 00:24:51.120]   or 15 minutes in the call that is also fine but yeah that that short duration also is going to
+[00:24:51.120 --> 00:24:56.480]   drive the team in correct way instead of going in different directions and trying to research too
+[00:24:56.480 --> 00:25:12.560]   many things yeah okay and do you want to go with other items cge shore bala
+[00:25:17.040 --> 00:25:23.920]   yeah for me I was able to test the mcp and get a laugh of um um proprietary offering yesterday
+[00:25:23.920 --> 00:25:30.640]   be I did connect with if a also we're trying to load that to the mcp gateway offered by
+[00:25:30.640 --> 00:25:37.920]   google on the agent platform but that did not work so still figuring out what can be done
+[00:25:37.920 --> 00:25:44.880]   and I have two things open where I have to check the if I can use the small elements for the
+[00:25:46.080 --> 00:25:51.120]   validation and also I can add over authentication in the plug in itself so these two things are
+[00:25:51.120 --> 00:25:59.680]   still working from this but if you want to see gitlab mcp I can just show now yeah
+[00:26:14.560 --> 00:26:20.000]   I just connected to it as soon as I connect I will be routed to a gitlab page and I have I
+[00:26:20.000 --> 00:26:27.200]   should be logged in there and I authenticate it and I come back to it so I am running so the mcp
+[00:26:27.200 --> 00:26:32.640]   inspector works only on stdio just to enable that we are running it locally using a library called
+[00:26:32.640 --> 00:26:39.840]   mcp remote and this is the gitlab ur and fully authenticated here after authentication only we
+[00:26:39.840 --> 00:26:45.760]   can even see the tools offered by this mcp that is one problem and because of this only we were
+[00:26:45.760 --> 00:26:51.680]   not able to load it into gateway I assume we'll face similar problem when we are working with
+[00:26:51.680 --> 00:26:57.760]   context force too so I picked on uh list tools and I can see all the tools here now
+[00:27:04.160 --> 00:27:10.880]   let's start with the first one yeah this is the mcp version tool let's see some
+[00:27:10.880 --> 00:27:19.600]   get merged with this so we need id of the project I open one project
+[00:27:29.840 --> 00:27:36.880]   so I have been I have authenticated with the gitlab once now I my gitlab session was not there but
+[00:27:36.880 --> 00:27:45.760]   still the mcp inspector is working because it is authenticated with this client
+[00:27:45.760 --> 00:27:53.760]   and I'll take one more it should go strid2
+[00:28:00.240 --> 00:28:08.240]   it gives me a decent response for all the tools
+[00:28:08.240 --> 00:28:17.680]   okay similarly we have other tools also we have some post operations also like you can create a
+[00:28:17.680 --> 00:28:27.040]   monitor quest we can do search also it is supposed to go and we can do and this is a search where
+[00:28:27.040 --> 00:28:34.640]   the gitlab ai is involved and this is a search which is like a text space search so both are
+[00:28:34.640 --> 00:28:43.600]   available semantic and normal search yep that's about it
+[00:28:43.600 --> 00:28:52.640]   how is the authentication setup here uh suggestion so Balavan I start first time I'm
+[00:28:52.640 --> 00:28:58.320]   routed to the gitlab page like you are routed to the snowflake I accept it there and then I come
+[00:28:58.320 --> 00:29:08.320]   back to this okay so this mcp inspector has guided the walkthrough also for authorization
+[00:29:08.320 --> 00:29:13.760]   did you use that or I didn't but that is not working for me beyond step one
+[00:29:13.760 --> 00:29:22.000]   okay so gitlab may not have the dynamic discovery available
+[00:29:24.400 --> 00:29:31.040]   ideally this requires a dynamic discovery endpoints from the mcp server
+[00:29:31.040 --> 00:29:36.400]   from from the authorization server for the mcp
+[00:29:36.400 --> 00:29:48.080]   let me put it here bala you can also try you will see that yeah
+[00:29:49.440 --> 00:29:59.680]   yeah so you you're using stdio type and transport type and only at the streamable
+[00:29:59.680 --> 00:30:06.560]   stp streamable stp is not working stdio is only working so we are using mcp remote for that
+[00:30:06.560 --> 00:30:15.360]   okay but this will work I mean this is just a problem with mcp inspector that's why it is working
+[00:30:15.360 --> 00:30:23.360]   only with mcp remote but this will work or over ssc or streamable stp either of this should work
+[00:30:23.360 --> 00:30:32.800]   okay
+[00:30:32.800 --> 00:30:36.800]   any other questions
+[00:30:46.320 --> 00:30:48.960]   I would you can also evaluate I just pasted that in
+[00:30:48.960 --> 00:30:55.600]   chat in mcp inspector this is the command but we can have similar thing in any client we want to
+[00:30:55.600 --> 00:31:04.480]   evaluate I wanted I wanted to ask about that yes I really want to do that I want to follow
+[00:31:04.480 --> 00:31:14.480]   also this process I will do it yes sure about that I have a question if I can if I can say
+[00:31:16.320 --> 00:31:23.600]   or go ahead please okay well actually actually not related with this last exposition but
+[00:31:23.600 --> 00:31:34.720]   with my tickets it was it's a different topic so the question is I noticed that in Jira I was
+[00:31:34.720 --> 00:31:43.360]   assigned with a ticket related with evaluation of mcp farms I wonder if that is correct or
+[00:31:43.360 --> 00:31:49.600]   is an error if it is correct I will take it if not just I wanted to verify if that is true
+[00:31:49.600 --> 00:31:58.880]   yeah uh Alberto regarding that right last week we had a discussion during the call that
+[00:31:58.880 --> 00:32:03.840]   that needs to be assigned to you okay that's an ascent as check reguided
+[00:32:03.840 --> 00:32:11.200]   I just was confused I was confused just I thought it was related with the task that
+[00:32:11.200 --> 00:32:18.720]   Cassiope is actually doing but now I understand thank you so one one comment that I want to say
+[00:32:18.720 --> 00:32:26.320]   see this is that as you asked yesterday for this documentation that I shared yesterday
+[00:32:26.320 --> 00:32:32.480]   I formally put it in a page in conference I share with you in the common chat of this group
+[00:32:33.120 --> 00:32:40.720]   I would put it I would put it again here yeah I just went over to Alberto it was good I have some
+[00:32:40.720 --> 00:32:47.440]   questions I wanted to connect with you yesterday I did not get time no problem please uh did you
+[00:32:47.440 --> 00:32:56.000]   find a time tell me uh I will yeah it it was useful only thing is we don't have to tie it down to
+[00:32:56.000 --> 00:33:02.160]   copilot kit um it can be evaluated without that too other than that I have no concerns but I wanted
+[00:33:02.160 --> 00:33:10.080]   to see how did you arrive at these numbers uh please that would be a good learning for us okay
+[00:33:10.080 --> 00:33:19.120]   yeah a quick answer I can say is that as you can see in the documentation I've been sharing
+[00:33:19.120 --> 00:33:28.640]   so there are a kind of best test included into toolkit into this kit uh copilot kit that you
+[00:33:28.640 --> 00:33:35.200]   can't run in order to make these measurements so I use by default these kind of things but I
+[00:33:35.200 --> 00:33:42.640]   put there in the documentation the configuration and screenshots how how to use it so but if you
+[00:33:42.640 --> 00:33:50.640]   have more questions I will be happy to answer so regarding this topic also so I'm still working on
+[00:33:50.640 --> 00:33:57.840]   a little more sophisticated capacities for the copilot I am just kind of cleaning my code just
+[00:33:57.840 --> 00:34:04.880]   right now and I hope to finish by the end of my day and I will share the document I will update
+[00:34:04.880 --> 00:34:13.760]   the documentation and the whole code into a kit lab repository so I think that's it in my side
+[00:34:19.200 --> 00:34:30.160]   thank you very much yeah regarding the snowflake mcp authorization I have set up a meeting with
+[00:34:30.160 --> 00:34:39.360]   our snowflake team and apart from that I I was facing a challenge with respect to
+[00:34:39.360 --> 00:34:47.120]   reading the JWT from Gemina Enterprise I'm working in parallel on that also
+[00:34:50.080 --> 00:34:58.480]   what is that reading JWT in Gemina Enterprise yeah from Gemina Enterprise we have to read the
+[00:34:58.480 --> 00:35:09.680]   JWT token in the agent right so that's not coming up actually I thought that would be
+[00:35:09.680 --> 00:35:18.960]   there by default I thought that token reading all that is taken care by your auth interceptor right
+[00:35:18.960 --> 00:35:28.880]   right now I'm using only the user ID right the user ID is passed separately so I'm using that user
+[00:35:28.880 --> 00:35:39.040]   ID because I never needed the JWT I never worried about the JWT at all because this user ID is coming
+[00:35:40.400 --> 00:35:47.120]   as a separate field so when I am trying to read that ideally it will be there
+[00:35:47.120 --> 00:35:54.080]   in the tool context but what I am suspecting is the agent registration on
+[00:35:54.080 --> 00:36:03.200]   Gemini and Gemina Enterprise we haven't added any authorization so it has a separate authorization
+[00:36:03.200 --> 00:36:11.920]   flow so I'm just suspecting that I'll look further into that check rate so should we have to do
+[00:36:11.920 --> 00:36:19.920]   anything with that authorization or is there any any other configuration that we need to do to pass
+[00:36:19.920 --> 00:36:37.520]   the token yeah okay anything else to discuss check rate I've created a ticket for the deployment
+[00:36:37.520 --> 00:36:45.280]   which you asked yesterday right for the agent AI council oh okay okay I ascended to dial and
+[00:36:45.280 --> 00:36:49.520]   he started on it but unfortunately he was sick in the evening so he couldn't join the call
+[00:36:50.000 --> 00:36:57.840]   so I'll take the update from him and I'll post it to you okay and he is he trying to do it in the
+[00:36:57.840 --> 00:37:08.480]   sandbox environment yeah in sandbox yes okay okay fine thank you yeah thanks all for joining
+[00:37:08.480 --> 00:37:19.440]   have a good day thank you have a good day
+[00:37:38.480 --> 00:37:59.440]   oh
