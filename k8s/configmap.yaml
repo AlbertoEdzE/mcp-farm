@@ -13,4 +13,6 @@ data:
   CF_REGISTRY_PORT: "8081"
   # expose_container_port must be true. See doc/ADR/ADR-001-gke-over-cloud-run.md.
   CF_EXPOSE_CONTAINER_PORT: "true"
-  # Additional keys are added in Cluster C3 (MF-E04-T02) once Q3 is resolved.
+  # Health endpoint paths. Assumed /health — verify when Q1 is resolved.
+  CF_GATEWAY_HEALTH_PATH: "/health"
+  CF_REGISTRY_HEALTH_PATH: "/health"
