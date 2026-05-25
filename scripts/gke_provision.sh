@@ -127,18 +127,19 @@ gcloud config set project "${GCP_PROJECT_ID}"
 # Enable required GCP APIs
 # ---------------------------------------------------------------------------
 
-echo "[2/7] Enabling GCP APIs..."
+echo "[2/10] Enabling GCP APIs..."
 gcloud services enable \
     container.googleapis.com \
     sqladmin.googleapis.com \
     redis.googleapis.com \
+    servicenetworking.googleapis.com \
     --project="${GCP_PROJECT_ID}"
 
 # ---------------------------------------------------------------------------
 # Create dedicated VPC network (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[3/8] Creating VPC network 'mcp-farm-network'..."
+echo "[3/10] Creating VPC network 'mcp-farm-network'..."
 if gcloud compute networks describe mcp-farm-network \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
     echo "  VPC network 'mcp-farm-network' already exists — skipping."
@@ -152,7 +153,27 @@ fi
 # Create GKE cluster (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[4/8] Creating GKE cluster '${GKE_CLUSTER_NAME}'..."
+echo "[4/10] Allocating private services IP range for Cloud SQL..."
+if gcloud compute addresses describe google-managed-services-mcp-farm \
+       --global --project="${GCP_PROJECT_ID}" &>/dev/null; then
+    echo "  IP range already allocated — skipping."
+else
+    gcloud compute addresses create google-managed-services-mcp-farm \
+        --global \
+        --purpose=VPC_PEERING \
+        --prefix-length=16 \
+        --network=mcp-farm-network \
+        --project="${GCP_PROJECT_ID}"
+fi
+
+echo "[5/10] Creating VPC peering for private services (Cloud SQL)..."
+gcloud services vpc-peerings connect \
+    --service=servicenetworking.googleapis.com \
+    --ranges=google-managed-services-mcp-farm \
+    --network=mcp-farm-network \
+    --project="${GCP_PROJECT_ID}"
+
+echo "[6/10] Creating GKE cluster '${GKE_CLUSTER_NAME}'..."
 if gcloud container clusters describe "${GKE_CLUSTER_NAME}" \
        --zone="${GCP_ZONE}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
@@ -178,7 +199,7 @@ gcloud container clusters get-credentials "${GKE_CLUSTER_NAME}" \
 # Create Cloud SQL PostgreSQL 15 instance (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[5/8] Creating Cloud SQL instance '${CLOUDSQL_INSTANCE_NAME}'..."
+echo "[7/10] Creating Cloud SQL instance '${CLOUDSQL_INSTANCE_NAME}' (private IP)..."
 if gcloud sql instances describe "${CLOUDSQL_INSTANCE_NAME}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
     echo "  Cloud SQL instance '${CLOUDSQL_INSTANCE_NAME}' already exists — skipping creation."
@@ -189,10 +210,12 @@ else
         --database-version=POSTGRES_15 \
         --tier=db-f1-micro \
         --storage-type=SSD \
-        --storage-size=10GB
+        --storage-size=10GB \
+        --network=projects/${GCP_PROJECT_ID}/global/networks/mcp-farm-network \
+        --no-assign-ip
 fi
 
-echo "[6/8] Creating Cloud SQL database '${CLOUDSQL_DATABASE_NAME}'..."
+echo "[8/10] Creating Cloud SQL database '${CLOUDSQL_DATABASE_NAME}'..."
 if gcloud sql databases describe "${CLOUDSQL_DATABASE_NAME}" \
        --instance="${CLOUDSQL_INSTANCE_NAME}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
@@ -207,7 +230,7 @@ fi
 # Create Memorystore Redis 7 instance (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[7/8] Creating Memorystore instance '${MEMORYSTORE_INSTANCE_NAME}'..."
+echo "[9/10] Creating Memorystore instance '${MEMORYSTORE_INSTANCE_NAME}'..."
 if gcloud redis instances describe "${MEMORYSTORE_INSTANCE_NAME}" \
        --region="${GCP_REGION}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
@@ -225,7 +248,7 @@ fi
 # Apply GKE namespace
 # ---------------------------------------------------------------------------
 
-echo "[8/8] Applying Kubernetes namespace..."
+echo "[10/10] Applying Kubernetes namespace..."
 kubectl apply -f "${REPO_ROOT}/k8s/namespace.yaml"
 
 # ---------------------------------------------------------------------------
