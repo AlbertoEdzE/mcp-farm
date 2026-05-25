@@ -36,7 +36,7 @@ typecheck: ## Run mypy type checker on tests and scripts
 	@mypy tests/ scripts/generate_synthetic_data.py
 
 generate-data: ## Generate deterministic synthetic test data fixtures
-	@python scripts/generate_synthetic_data.py
+	@.venv/bin/python scripts/generate_synthetic_data.py
 
 register-proxy: ## Register the GitLab MCP proxy with the running ContextForge Config Registry
 	@.venv/bin/python scripts/register_proxy.py
