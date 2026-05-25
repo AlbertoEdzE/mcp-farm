@@ -1,5 +1,5 @@
 .PHONY: help install local-up local-down gke-provision gke-deploy gke-teardown \
-        test lint typecheck generate-data register-proxy create-virtual-server clean
+        test lint typecheck generate-data register-proxy create-virtual-server report clean
 
 SHELL  := /bin/bash
 CLUSTER ?= all
@@ -43,6 +43,9 @@ register-proxy: ## Register the GitLab MCP proxy with the running ContextForge C
 
 create-virtual-server: ## Create the test virtual server in the running ContextForge Config Registry
 	@.venv/bin/python scripts/create_virtual_server.py
+
+report: ## Run full test suite and generate reports/validation_report.md (Baptist Health deliverable)
+	@.venv/bin/python scripts/generate_report.py
 
 clean: ## Remove generated artefacts (__pycache__, .pytest_cache, reports/)
 	@find . -type d -name __pycache__ -not -path './.git/*' -exec rm -rf {} + 2>/dev/null || true

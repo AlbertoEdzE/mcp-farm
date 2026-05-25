@@ -133,10 +133,10 @@ kubectl apply -f "${K8S_DIR}/namespace.yaml"
 # Create image pull secret for IBM Container Registry (idempotent)
 # ---------------------------------------------------------------------------
 
-echo "[2/7] Creating IBM entitlement image pull secret..."
+echo "[2/7] Creating ghcr.io image pull secret..."
 kubectl create secret docker-registry ibm-entitlement-key \
-    --docker-server=icr.io \
-    --docker-username=iamapikey \
+    --docker-server=ghcr.io \
+    --docker-username=ibm \
     --docker-password="${IBM_ENTITLEMENT_KEY}" \
     --namespace="${GKE_NAMESPACE}" \
     --dry-run=client -o yaml | kubectl apply -f -

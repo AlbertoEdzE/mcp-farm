@@ -29,8 +29,8 @@ The following items are unresolved as of 2026-05-21. Local infrastructure (postg
 
 | ID | Variable(s) | Owner | Required for |
 |---|---|---|---|
-| Q1 | `CF_IMAGE_URI`, `CF_IMAGE_TAG`, `IBM_ENTITLEMENT_KEY` | Kashyap | ContextForge container start, GKE deploy |
-| Q2 | `GCP_PROJECT_ID` | Chakri | GKE provision |
+| Q1 | `CF_IMAGE_URI`, `CF_IMAGE_TAG` | **Resolved 2026-05-25** — public image: `ghcr.io/ibm/mcp-context-forge:latest` (Apache 2.0, no entitlement key required) | ContextForge container start, GKE deploy |
+| Q2 | `GCP_PROJECT_ID` | **Resolved 2026-05-25** — `x-ai-engineering` (project number 1030710021223) | GKE provision |
 | Q4 | `GITLAB_OAUTH_CLIENT_ID`, `GITLAB_OAUTH_CLIENT_SECRET` | Bala | GitLab proxy registration |
 | Q5 | — | Chakri | Secret Manager vs Kubernetes Secrets decision |
 | Q6 | `GKE_NODE_MACHINE_TYPE`, `GKE_NODE_COUNT` | Lakshman | GKE cluster creation |
@@ -187,21 +187,21 @@ Expected: all containers stopped and removed, `postgres_data` volume deleted.
 
 ### Prerequisites for GKE
 
-All of Q1, Q2, Q4, Q6 must be resolved. Q5 must be confirmed before deciding on secret management approach.
+Q1 and Q2 are resolved (see open questions table). Q4 and Q6 must still be resolved. Q5 must be confirmed before deciding on secret management approach.
 
 Populate the following in `.env` before running GKE scripts:
 
 ```
-GCP_PROJECT_ID=<resolved-Q2>
+GCP_PROJECT_ID=x-ai-engineering
 GCP_REGION=<e.g. us-central1>
 GCP_ZONE=<e.g. us-central1-a>
 GKE_CLUSTER_NAME=mcp-farm-sandbox
 GKE_NAMESPACE=mcp-farm
 GKE_NODE_MACHINE_TYPE=<resolved-Q6>
 GKE_NODE_COUNT=<resolved-Q6>
-CF_IMAGE_URI=<resolved-Q1>
-CF_IMAGE_TAG=<resolved-Q1>
-IBM_ENTITLEMENT_KEY=<resolved-Q1>
+CF_IMAGE_URI=ghcr.io/ibm/mcp-context-forge
+CF_IMAGE_TAG=latest
+IBM_ENTITLEMENT_KEY=<optional-github-pat-read-packages>
 CLOUDSQL_USER=<db-username>
 CLOUDSQL_PASSWORD=<db-password>
 GITLAB_MCP_URL=<resolved-Q4>
@@ -349,13 +349,13 @@ From `doc/Specify.md` Section 16:
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | GKE cluster reachable via kubectl | Pending Q2, Q6 |
-| 2 | All ContextForge pods in Running state | Pending Q1, Q2, Q6 |
-| 3 | AI Gateway health endpoint returns 200 | Pending Q1 |
-| 4 | Config Registry health endpoint returns 200 | Pending Q1 |
-| 5 | GET /v1/tools returns non-empty array with GitLab tools | Pending Q1, Q4 |
+| 1 | GKE cluster reachable via kubectl | Pending Q6 (Q2 resolved: x-ai-engineering) |
+| 2 | All ContextForge pods in Running state | Pending Q6 (Q1 resolved: ghcr.io/ibm/mcp-context-forge) |
+| 3 | AI Gateway health endpoint returns 200 | Ready to test once Q6 resolved |
+| 4 | Config Registry health endpoint returns 200 | Ready to test once Q6 resolved |
+| 5 | GET /v1/tools returns non-empty array with GitLab tools | Pending Q4 |
 | 6 | `make test` passes with exit 0 from clean checkout | Structural tests pass now; integration tests pending Q1 |
 | 7 | `make install && make gke-deploy` reproduces on second run | Scripts implemented and idempotent |
 | 8 | Runbook contains all steps and expected outputs | Done — this document |
-| 9 | All open questions (Q1–Q6) resolved | Q3 assumed via ADR-001; Q1, Q2, Q4, Q5, Q6 open |
+| 9 | All open questions (Q1–Q6) resolved | Q1 resolved (ghcr.io public image); Q2 resolved (x-ai-engineering); Q3 assumed via ADR-001; Q4, Q5, Q6 open |
 | 10 | No secret or credential in any committed file | Verified by TestSecurityBaseline in test_c0_foundation.py |
