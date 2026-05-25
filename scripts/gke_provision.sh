@@ -241,7 +241,8 @@ else
         --region="${GCP_REGION}" \
         --size=1 \
         --tier=basic \
-        --redis-version=redis_7_0
+        --redis-version=redis_7_0 \
+        --network=projects/${GCP_PROJECT_ID}/global/networks/mcp-farm-network
 fi
 
 # ---------------------------------------------------------------------------
@@ -256,15 +257,33 @@ kubectl apply -f "${REPO_ROOT}/k8s/namespace.yaml"
 # ---------------------------------------------------------------------------
 
 echo ""
+echo "--- Retrieving managed service IPs and updating .env ---"
+echo ""
+
+CLOUDSQL_IP=$(gcloud sql instances describe "${CLOUDSQL_INSTANCE_NAME}" \
+    --project="${GCP_PROJECT_ID}" \
+    --format='get(ipAddresses[0].ipAddress)' 2>/dev/null || echo "")
+
+REDIS_IP=$(gcloud redis instances describe "${MEMORYSTORE_INSTANCE_NAME}" \
+    --region="${GCP_REGION}" \
+    --project="${GCP_PROJECT_ID}" \
+    --format='get(host)' 2>/dev/null || echo "")
+
+if [[ -n "${CLOUDSQL_IP}" ]]; then
+    sed -i "s|CLOUDSQL_CONNECTION_STRING=.*|CLOUDSQL_CONNECTION_STRING=${CLOUDSQL_IP}:5432/${CLOUDSQL_DATABASE_NAME}|" "${ENV_FILE}"
+    echo "  CLOUDSQL_CONNECTION_STRING=${CLOUDSQL_IP}:5432/${CLOUDSQL_DATABASE_NAME}"
+else
+    echo "  WARNING: Could not retrieve Cloud SQL IP — update CLOUDSQL_CONNECTION_STRING in .env manually."
+fi
+
+if [[ -n "${REDIS_IP}" ]]; then
+    sed -i "s|REDIS_HOST=.*|REDIS_HOST=${REDIS_IP}|" "${ENV_FILE}"
+    echo "  REDIS_HOST=${REDIS_IP}"
+else
+    echo "  WARNING: Could not retrieve Memorystore IP — update REDIS_HOST in .env manually."
+fi
+
+echo ""
 echo "--- Provision complete ---"
 echo ""
-echo "Next steps:"
-echo "  1. Retrieve the Cloud SQL private IP:"
-echo "       gcloud sql instances describe ${CLOUDSQL_INSTANCE_NAME} --project=${GCP_PROJECT_ID} --format='get(ipAddresses[0].ipAddress)'"
-echo "     Update CLOUDSQL_CONNECTION_STRING in .env with the private IP."
-echo ""
-echo "  2. Retrieve the Memorystore host IP:"
-echo "       gcloud redis instances describe ${MEMORYSTORE_INSTANCE_NAME} --region=${GCP_REGION} --project=${GCP_PROJECT_ID} --format='get(host)'"
-echo "     Update REDIS_HOST in .env with this IP."
-echo ""
-echo "  3. Run: ./scripts/gke_deploy.sh"
+echo "Next step: make gke-deploy"
