@@ -82,7 +82,6 @@ REQUIRED_VARS=(
     GKE_NAMESPACE
     CF_IMAGE_URI
     CF_IMAGE_TAG
-    IBM_ENTITLEMENT_KEY
     CLOUDSQL_USER
     CLOUDSQL_PASSWORD
     CLOUDSQL_CONNECTION_STRING
@@ -133,13 +132,17 @@ kubectl apply -f "${K8S_DIR}/namespace.yaml"
 # Create image pull secret for IBM Container Registry (idempotent)
 # ---------------------------------------------------------------------------
 
-echo "[2/7] Creating ghcr.io image pull secret..."
-kubectl create secret docker-registry ibm-entitlement-key \
-    --docker-server=ghcr.io \
-    --docker-username=ibm \
-    --docker-password="${IBM_ENTITLEMENT_KEY}" \
-    --namespace="${GKE_NAMESPACE}" \
-    --dry-run=client -o yaml | kubectl apply -f -
+echo "[2/7] Image pull secret (optional — ghcr.io image is public)..."
+if [[ -n "${IBM_ENTITLEMENT_KEY:-}" && "${IBM_ENTITLEMENT_KEY:-}" != \<* ]]; then
+    kubectl create secret docker-registry ibm-entitlement-key \
+        --docker-server=ghcr.io \
+        --docker-username=ibm \
+        --docker-password="${IBM_ENTITLEMENT_KEY}" \
+        --namespace="${GKE_NAMESPACE}" \
+        --dry-run=client -o yaml | kubectl apply -f -
+else
+    echo "  IBM_ENTITLEMENT_KEY not set — skipping (public image requires no credentials)."
+fi
 
 # ---------------------------------------------------------------------------
 # Create database credentials secret (idempotent)

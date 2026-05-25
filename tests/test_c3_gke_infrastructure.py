@@ -273,12 +273,17 @@ class TestGKEInfrastructureStructure:
             "k8s/deployment.yaml must define a readinessProbe."
         )
 
-    def test_deployment_uses_ibm_entitlement_pull_secret(self) -> None:
-        """k8s/deployment.yaml must reference the ibm-entitlement-key imagePullSecret."""
+    def test_deployment_image_is_public_registry(self) -> None:
+        """k8s/deployment.yaml must not block on a private imagePullSecret.
+
+        Q1 resolved 2026-05-25: image is public on ghcr.io — no pull credentials required.
+        imagePullSecrets must be absent so the kubelet uses anonymous pull.
+        """
         content = (_K8S_DIR / "deployment.yaml").read_text()
-        assert "ibm-entitlement-key" in content, (
-            "k8s/deployment.yaml must reference 'ibm-entitlement-key' in imagePullSecrets. "
-            "This secret is created by gke_deploy.sh from IBM_ENTITLEMENT_KEY."
+        assert "imagePullSecrets" not in content, (
+            "k8s/deployment.yaml must not declare imagePullSecrets. "
+            "The ContextForge image (ghcr.io/ibm/mcp-context-forge) is public — "
+            "anonymous pull requires no credentials."
         )
 
     def test_deployment_uses_placeholder_image(self) -> None:

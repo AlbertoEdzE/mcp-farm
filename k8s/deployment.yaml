@@ -16,8 +16,6 @@ spec:
       labels:
         app: contextforge
     spec:
-      imagePullSecrets:
-        - name: ibm-entitlement-key
       containers:
         - name: contextforge
           # Image is patched at deploy time by gke_deploy.sh using:
