@@ -135,10 +135,24 @@ gcloud services enable \
     --project="${GCP_PROJECT_ID}"
 
 # ---------------------------------------------------------------------------
+# Create dedicated VPC network (skip if already exists)
+# ---------------------------------------------------------------------------
+
+echo "[3/8] Creating VPC network 'mcp-farm-network'..."
+if gcloud compute networks describe mcp-farm-network \
+       --project="${GCP_PROJECT_ID}" &>/dev/null; then
+    echo "  VPC network 'mcp-farm-network' already exists — skipping."
+else
+    gcloud compute networks create mcp-farm-network \
+        --project="${GCP_PROJECT_ID}" \
+        --subnet-mode=auto
+fi
+
+# ---------------------------------------------------------------------------
 # Create GKE cluster (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[3/7] Creating GKE cluster '${GKE_CLUSTER_NAME}'..."
+echo "[4/8] Creating GKE cluster '${GKE_CLUSTER_NAME}'..."
 if gcloud container clusters describe "${GKE_CLUSTER_NAME}" \
        --zone="${GCP_ZONE}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
@@ -149,6 +163,7 @@ else
         --zone="${GCP_ZONE}" \
         --machine-type="${GKE_NODE_MACHINE_TYPE}" \
         --num-nodes="${GKE_NODE_COUNT}" \
+        --network=mcp-farm-network \
         --enable-ip-alias \
         --no-enable-basic-auth \
         --metadata disable-legacy-endpoints=true
@@ -163,7 +178,7 @@ gcloud container clusters get-credentials "${GKE_CLUSTER_NAME}" \
 # Create Cloud SQL PostgreSQL 15 instance (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[4/7] Creating Cloud SQL instance '${CLOUDSQL_INSTANCE_NAME}'..."
+echo "[5/8] Creating Cloud SQL instance '${CLOUDSQL_INSTANCE_NAME}'..."
 if gcloud sql instances describe "${CLOUDSQL_INSTANCE_NAME}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
     echo "  Cloud SQL instance '${CLOUDSQL_INSTANCE_NAME}' already exists — skipping creation."
@@ -177,7 +192,7 @@ else
         --storage-size=10GB
 fi
 
-echo "[5/7] Creating Cloud SQL database '${CLOUDSQL_DATABASE_NAME}'..."
+echo "[6/8] Creating Cloud SQL database '${CLOUDSQL_DATABASE_NAME}'..."
 if gcloud sql databases describe "${CLOUDSQL_DATABASE_NAME}" \
        --instance="${CLOUDSQL_INSTANCE_NAME}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
@@ -192,7 +207,7 @@ fi
 # Create Memorystore Redis 7 instance (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[6/7] Creating Memorystore instance '${MEMORYSTORE_INSTANCE_NAME}'..."
+echo "[7/8] Creating Memorystore instance '${MEMORYSTORE_INSTANCE_NAME}'..."
 if gcloud redis instances describe "${MEMORYSTORE_INSTANCE_NAME}" \
        --region="${GCP_REGION}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
@@ -210,7 +225,7 @@ fi
 # Apply GKE namespace
 # ---------------------------------------------------------------------------
 
-echo "[7/7] Applying Kubernetes namespace..."
+echo "[8/8] Applying Kubernetes namespace..."
 kubectl apply -f "${REPO_ROOT}/k8s/namespace.yaml"
 
 # ---------------------------------------------------------------------------
