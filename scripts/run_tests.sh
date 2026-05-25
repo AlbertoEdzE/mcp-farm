@@ -82,9 +82,13 @@ else
     PYTEST_ARGS+=("$REPO_ROOT/tests/")
 fi
 
+LOG_FILE="$REPO_ROOT/reports/test_run_$(date +%Y%m%d_%H%M%S).log"
+
 echo "--- MCP Farm: test ---"
 echo "Cluster filter : ${CLUSTER:-all}"
-echo "Report output  : $REPO_ROOT/reports/test-results.xml"
+echo "XML report     : $REPO_ROOT/reports/test-results.xml"
+echo "Console log    : $LOG_FILE"
 echo ""
 
-python -m pytest "${PYTEST_ARGS[@]}"
+python -m pytest "${PYTEST_ARGS[@]}" 2>&1 | tee "$LOG_FILE"
+exit "${PIPESTATUS[0]}"
