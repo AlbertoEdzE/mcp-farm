@@ -84,6 +84,7 @@ REQUIRED_VARS=(
     CF_IMAGE_TAG
     CLOUDSQL_USER
     CLOUDSQL_PASSWORD
+    CLOUDSQL_DATABASE_NAME
     CLOUDSQL_CONNECTION_STRING
     REDIS_HOST
     REDIS_PORT
@@ -149,10 +150,12 @@ fi
 # ---------------------------------------------------------------------------
 
 echo "[3/7] Creating database credentials secret..."
+# ContextForge expects DATABASE_URL in SQLAlchemy asyncpg format.
+# CLOUDSQL_CONNECTION_STRING is "<host>:5432/<dbname>" set by gke_provision.sh.
+CLOUDSQL_IP="${CLOUDSQL_CONNECTION_STRING%%:*}"
+DATABASE_URL="postgresql+asyncpg://${CLOUDSQL_USER}:${CLOUDSQL_PASSWORD}@${CLOUDSQL_IP}:5432/${CLOUDSQL_DATABASE_NAME}"
 kubectl create secret generic contextforge-db-credentials \
-    --from-literal=CLOUDSQL_USER="${CLOUDSQL_USER}" \
-    --from-literal=CLOUDSQL_PASSWORD="${CLOUDSQL_PASSWORD}" \
-    --from-literal=CLOUDSQL_CONNECTION_STRING="${CLOUDSQL_CONNECTION_STRING}" \
+    --from-literal=DATABASE_URL="${DATABASE_URL}" \
     --namespace="${GKE_NAMESPACE}" \
     --dry-run=client -o yaml | kubectl apply -f -
 
@@ -161,9 +164,10 @@ kubectl create secret generic contextforge-db-credentials \
 # ---------------------------------------------------------------------------
 
 echo "[4/7] Creating Redis credentials secret..."
+# ContextForge expects REDIS_URL in redis:// URI format.
+REDIS_URL="redis://${REDIS_HOST}:${REDIS_PORT}/0"
 kubectl create secret generic contextforge-redis-credentials \
-    --from-literal=REDIS_HOST="${REDIS_HOST}" \
-    --from-literal=REDIS_PORT="${REDIS_PORT}" \
+    --from-literal=REDIS_URL="${REDIS_URL}" \
     --namespace="${GKE_NAMESPACE}" \
     --dry-run=client -o yaml | kubectl apply -f -
 

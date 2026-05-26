@@ -7,12 +7,9 @@ metadata:
     app: contextforge
     project: mcp-farm
 data:
-  # Non-sensitive ContextForge configuration.
-  # Sensitive values (credentials) are in Secrets, not here.
-  CF_GATEWAY_PORT: "8080"
-  CF_REGISTRY_PORT: "8081"
-  # expose_container_port must be true. See doc/ADR/ADR-001-gke-over-cloud-run.md.
-  CF_EXPOSE_CONTAINER_PORT: "true"
-  # Health endpoint paths. Assumed /health — verify when Q1 is resolved.
+  # ContextForge binds to HOST:PORT. Must be 0.0.0.0 so K8s probes can reach it.
+  PORT: "4444"
+  HOST: "0.0.0.0"
+  # Health endpoint path confirmed from ContextForge source (Q1 resolved 2026-05-25).
   CF_GATEWAY_HEALTH_PATH: "/health"
   CF_REGISTRY_HEALTH_PATH: "/health"

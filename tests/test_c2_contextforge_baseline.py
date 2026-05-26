@@ -47,31 +47,35 @@ class TestContextForgeBaselineStructure:
             "this is a root cause of the Cloud Run deployment failure."
         )
 
-    def test_configmap_expose_container_port_is_true(self) -> None:
-        """k8s/configmap.yaml must set CF_EXPOSE_CONTAINER_PORT to the string 'true'."""
+    def test_configmap_sets_correct_port_and_host(self) -> None:
+        """k8s/configmap.yaml must set PORT=4444 and HOST=0.0.0.0.
+
+        Q1 resolved 2026-05-25: ContextForge binds to HOST:PORT. HOST must be 0.0.0.0
+        (not the default 127.0.0.1) so Kubernetes liveness/readiness probes can reach it.
+        """
         configmap_path = _REPO_ROOT / "k8s" / "configmap.yaml"
         assert configmap_path.is_file(), "k8s/configmap.yaml not found."
         content = configmap_path.read_text()
-        assert 'CF_EXPOSE_CONTAINER_PORT: "true"' in content, (
-            'k8s/configmap.yaml must contain CF_EXPOSE_CONTAINER_PORT: "true". '
-            "Missing or incorrect value will prevent the gateway from binding its port. "
-            "See doc/ADR/ADR-001-gke-over-cloud-run.md."
+        assert 'PORT: "4444"' in content, (
+            'k8s/configmap.yaml must contain PORT: "4444". '
+            "ContextForge listens on port 4444 by default."
+        )
+        assert 'HOST: "0.0.0.0"' in content, (
+            'k8s/configmap.yaml must contain HOST: "0.0.0.0". '
+            "Default of 127.0.0.1 makes Kubernetes probes fail — loopback is unreachable from the kubelet."
         )
 
-    def test_docker_compose_expose_container_port_uses_env_var(self) -> None:
-        """docker-compose.yml contextforge service must pass CF_EXPOSE_CONTAINER_PORT via env var."""
+    def test_docker_compose_sets_port_and_host(self) -> None:
+        """docker-compose.yml contextforge service must pass PORT and HOST via env vars."""
         compose_path = _REPO_ROOT / "docker-compose.yml"
         assert compose_path.is_file(), "docker-compose.yml not found."
         data = yaml.safe_load(compose_path.read_text())
         cf_env = data.get("services", {}).get("contextforge", {}).get("environment", {})
-        assert "CF_EXPOSE_CONTAINER_PORT" in cf_env, (
-            "docker-compose.yml contextforge service must declare CF_EXPOSE_CONTAINER_PORT "
-            "in its environment block."
+        assert "PORT" in cf_env, (
+            "docker-compose.yml contextforge service must declare PORT in its environment block."
         )
-        value = cf_env["CF_EXPOSE_CONTAINER_PORT"]
-        assert str(value).startswith("${"), (
-            f"CF_EXPOSE_CONTAINER_PORT in docker-compose.yml must use env var interpolation "
-            f"(${{...}}), not a hardcoded value. Got: {value!r}"
+        assert "HOST" in cf_env, (
+            "docker-compose.yml contextforge service must declare HOST in its environment block."
         )
 
     def test_health_paths_present_in_env_example(self) -> None:
@@ -164,36 +168,25 @@ class TestContextForgeBaselineIntegration:
             "and update the Unresolved Items table in ADR-001."
         )
 
-    def test_gateway_and_registry_ports_are_distinct(
-        self, gateway_base_url: str, registry_base_url: str
+    def test_contextforge_health_endpoint_responds(
+        self, gateway_base_url: str
     ) -> None:
-        """Gateway and registry must be reachable on separate ports."""
+        """ContextForge /health endpoint must return HTTP 200.
+
+        Q1 resolved 2026-05-25: ContextForge is a single FastAPI app on port 4444.
+        Gateway (/gateways) and server registry (/servers) are both served on the same port.
+        """
+        import httpx
         from urllib.parse import urlparse
 
-        gw_port = urlparse(gateway_base_url).port or 8080
-        reg_port = urlparse(registry_base_url).port or 8081
-        assert gw_port != reg_port, (
-            f"Gateway and registry are configured on the same port ({gw_port}). "
-            "They must run on distinct ports."
-        )
+        health_path = os.environ.get("CF_GATEWAY_HEALTH_PATH", "/health")
+        url = gateway_base_url.rstrip("/") + health_path
+        port = urlparse(gateway_base_url).port or 4444
 
-        import httpx
-
-        gw_health = os.environ.get("CF_GATEWAY_HEALTH_PATH", "/health")
-        reg_health = os.environ.get("CF_REGISTRY_HEALTH_PATH", "/health")
-
-        gw_response = httpx.get(
-            gateway_base_url.rstrip("/") + gw_health, timeout=5.0
-        )
-        reg_response = httpx.get(
-            registry_base_url.rstrip("/") + reg_health, timeout=5.0
-        )
-
-        assert gw_response.status_code == 200, (
-            f"Gateway did not respond on port {gw_port}."
-        )
-        assert reg_response.status_code == 200, (
-            f"Registry did not respond on port {reg_port}."
+        response = httpx.get(url, timeout=5.0)
+        assert response.status_code == 200, (
+            f"ContextForge health endpoint {url!r} returned HTTP {response.status_code}. "
+            f"Expected 200 on port {port}."
         )
 
     def test_gateway_health_implies_expose_flag_active(

@@ -40,13 +40,13 @@ def env() -> dict[str, str]:
 @pytest.fixture(scope="session")
 def gateway_base_url() -> str:
     """Base URL of the ContextForge AI Gateway, read from TEST_GATEWAY_BASE_URL."""
-    return os.environ.get("TEST_GATEWAY_BASE_URL", "http://localhost:8080")
+    return os.environ.get("TEST_GATEWAY_BASE_URL", "http://localhost:4444")
 
 
 @pytest.fixture(scope="session")
 def registry_base_url() -> str:
     """Base URL of the ContextForge Config Registry, read from TEST_REGISTRY_BASE_URL."""
-    return os.environ.get("TEST_REGISTRY_BASE_URL", "http://localhost:8081")
+    return os.environ.get("TEST_REGISTRY_BASE_URL", "http://localhost:4444")
 
 
 @pytest.fixture(scope="session")
@@ -72,14 +72,14 @@ def _tcp_reachable(host: str, port: int, timeout: float = 2.0) -> bool:
 @pytest.fixture(scope="session")
 def gateway_reachable() -> bool:
     """True if the local ContextForge AI Gateway TCP port is accepting connections."""
-    port = int(os.environ.get("LOCAL_CF_GATEWAY_PORT", "8080"))
+    port = int(os.environ.get("LOCAL_CF_GATEWAY_PORT", "4444"))
     return _tcp_reachable("localhost", port)
 
 
 @pytest.fixture(scope="session")
 def registry_reachable() -> bool:
     """True if the local ContextForge Config Registry TCP port is accepting connections."""
-    port = int(os.environ.get("LOCAL_CF_REGISTRY_PORT", "8081"))
+    port = int(os.environ.get("LOCAL_CF_REGISTRY_PORT", "4444"))
     return _tcp_reachable("localhost", port)
 
 

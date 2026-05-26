@@ -28,32 +28,25 @@ services:
       retries: 5
 
   contextforge:
-    # Image is resolved when Q1 is answered. See doc/Specify.md Section 15.
-    # Until Q1 is resolved, start only postgres and redis:
-    #   docker compose up -d postgres redis
-    image: "${CF_IMAGE_URI}:${CF_IMAGE_TAG}"
+    # Q1 resolved 2026-05-25: public image on ghcr.io, no pull credentials required.
+    image: "${CF_IMAGE_URI:-ghcr.io/ibm/mcp-context-forge}:${CF_IMAGE_TAG:-latest}"
     ports:
-      - "${LOCAL_CF_GATEWAY_PORT:-8080}:8080"
-      - "${LOCAL_CF_REGISTRY_PORT:-8081}:8081"
+      - "${LOCAL_CF_GATEWAY_PORT:-4444}:4444"
     environment:
-      CF_EXPOSE_CONTAINER_PORT: "${CF_EXPOSE_CONTAINER_PORT:-true}"
-      CLOUDSQL_DATABASE_NAME: "${CLOUDSQL_DATABASE_NAME:-contextforge}"
-      CLOUDSQL_USER: "${CLOUDSQL_USER}"
-      CLOUDSQL_PASSWORD: "${CLOUDSQL_PASSWORD}"
-      # Internal docker network connection string — overrides .env value for this container.
-      # ContextForge connects to the postgres service name, not localhost.
-      CLOUDSQL_CONNECTION_STRING: "postgresql://${CLOUDSQL_USER}:${CLOUDSQL_PASSWORD}@postgres:5432/${CLOUDSQL_DATABASE_NAME:-contextforge}"
-      REDIS_HOST: "redis"
-      REDIS_PORT: "6379"
+      # ContextForge binds to HOST:PORT. Must be 0.0.0.0 for health checks.
+      PORT: "${PORT:-4444}"
+      HOST: "${HOST:-0.0.0.0}"
+      # SQLAlchemy asyncpg URL — ContextForge uses DATABASE_URL, not CLOUDSQL_* vars.
+      DATABASE_URL: "postgresql+asyncpg://${CLOUDSQL_USER}:${CLOUDSQL_PASSWORD}@postgres:5432/${CLOUDSQL_DATABASE_NAME:-contextforge}"
+      # Redis URI — ContextForge uses REDIS_URL, not REDIS_HOST/REDIS_PORT vars.
+      REDIS_URL: "redis://redis:6379/0"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      # Health check path is confirmed in Cluster C2 (MF-E03-T02).
-      # /health is the assumed path per the deployment.yaml liveness probe.
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:4444/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

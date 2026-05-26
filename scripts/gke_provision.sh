@@ -87,6 +87,8 @@ REQUIRED_VARS=(
     GKE_NODE_COUNT
     CLOUDSQL_INSTANCE_NAME
     CLOUDSQL_DATABASE_NAME
+    CLOUDSQL_USER
+    CLOUDSQL_PASSWORD
     MEMORYSTORE_INSTANCE_NAME
 )
 
@@ -120,14 +122,14 @@ echo ""
 # Set active GCP project
 # ---------------------------------------------------------------------------
 
-echo "[1/7] Setting active GCP project..."
+echo "[1/11] Setting active GCP project..."
 gcloud config set project "${GCP_PROJECT_ID}"
 
 # ---------------------------------------------------------------------------
 # Enable required GCP APIs
 # ---------------------------------------------------------------------------
 
-echo "[2/10] Enabling GCP APIs..."
+echo "[2/11] Enabling GCP APIs..."
 gcloud services enable \
     container.googleapis.com \
     sqladmin.googleapis.com \
@@ -139,7 +141,7 @@ gcloud services enable \
 # Create dedicated VPC network (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[3/10] Creating VPC network 'mcp-farm-network'..."
+echo "[3/11] Creating VPC network 'mcp-farm-network'..."
 if gcloud compute networks describe mcp-farm-network \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
     echo "  VPC network 'mcp-farm-network' already exists — skipping."
@@ -153,7 +155,7 @@ fi
 # Create GKE cluster (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[4/10] Allocating private services IP range for Cloud SQL..."
+echo "[4/11] Allocating private services IP range for Cloud SQL..."
 if gcloud compute addresses describe google-managed-services-mcp-farm \
        --global --project="${GCP_PROJECT_ID}" &>/dev/null; then
     echo "  IP range already allocated — skipping."
@@ -166,14 +168,14 @@ else
         --project="${GCP_PROJECT_ID}"
 fi
 
-echo "[5/10] Creating VPC peering for private services (Cloud SQL)..."
+echo "[5/11] Creating VPC peering for private services (Cloud SQL)..."
 gcloud services vpc-peerings connect \
     --service=servicenetworking.googleapis.com \
     --ranges=google-managed-services-mcp-farm \
     --network=mcp-farm-network \
     --project="${GCP_PROJECT_ID}"
 
-echo "[6/10] Creating GKE cluster '${GKE_CLUSTER_NAME}'..."
+echo "[6/11] Creating GKE cluster '${GKE_CLUSTER_NAME}'..."
 if gcloud container clusters describe "${GKE_CLUSTER_NAME}" \
        --zone="${GCP_ZONE}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
@@ -199,7 +201,7 @@ gcloud container clusters get-credentials "${GKE_CLUSTER_NAME}" \
 # Create Cloud SQL PostgreSQL 15 instance (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[7/10] Creating Cloud SQL instance '${CLOUDSQL_INSTANCE_NAME}' (private IP)..."
+echo "[7/11] Creating Cloud SQL instance '${CLOUDSQL_INSTANCE_NAME}' (private IP)..."
 if gcloud sql instances describe "${CLOUDSQL_INSTANCE_NAME}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
     echo "  Cloud SQL instance '${CLOUDSQL_INSTANCE_NAME}' already exists — skipping creation."
@@ -215,7 +217,7 @@ else
         --no-assign-ip
 fi
 
-echo "[8/10] Creating Cloud SQL database '${CLOUDSQL_DATABASE_NAME}'..."
+echo "[8/11] Creating Cloud SQL database '${CLOUDSQL_DATABASE_NAME}'..."
 if gcloud sql databases describe "${CLOUDSQL_DATABASE_NAME}" \
        --instance="${CLOUDSQL_INSTANCE_NAME}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
@@ -226,11 +228,23 @@ else
         --project="${GCP_PROJECT_ID}"
 fi
 
+echo "[9/11] Creating Cloud SQL user '${CLOUDSQL_USER}'..."
+if gcloud sql users describe "${CLOUDSQL_USER}" \
+       --instance="${CLOUDSQL_INSTANCE_NAME}" \
+       --project="${GCP_PROJECT_ID}" &>/dev/null; then
+    echo "  User '${CLOUDSQL_USER}' already exists — skipping creation."
+else
+    gcloud sql users create "${CLOUDSQL_USER}" \
+        --instance="${CLOUDSQL_INSTANCE_NAME}" \
+        --password="${CLOUDSQL_PASSWORD}" \
+        --project="${GCP_PROJECT_ID}"
+fi
+
 # ---------------------------------------------------------------------------
 # Create Memorystore Redis 7 instance (skip if already exists)
 # ---------------------------------------------------------------------------
 
-echo "[9/10] Creating Memorystore instance '${MEMORYSTORE_INSTANCE_NAME}'..."
+echo "[10/11] Creating Memorystore instance '${MEMORYSTORE_INSTANCE_NAME}'..."
 if gcloud redis instances describe "${MEMORYSTORE_INSTANCE_NAME}" \
        --region="${GCP_REGION}" \
        --project="${GCP_PROJECT_ID}" &>/dev/null; then
@@ -249,7 +263,7 @@ fi
 # Apply GKE namespace
 # ---------------------------------------------------------------------------
 
-echo "[10/10] Applying Kubernetes namespace..."
+echo "[11/11] Applying Kubernetes namespace..."
 kubectl apply -f "${REPO_ROOT}/k8s/namespace.yaml"
 
 # ---------------------------------------------------------------------------
