@@ -19,7 +19,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).parent.parent
 _DEFAULT_GATEWAY_URL = "http://localhost:8080"
 _LOGIN_ENDPOINT = "/auth/login"
-_CHANGE_PASSWORD_ENDPOINT = "/auth/change-password"
+_CHANGE_PASSWORD_ENDPOINT = "/auth/email/change-password"
 
 
 def main() -> None:
