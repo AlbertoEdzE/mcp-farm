@@ -126,14 +126,14 @@ echo ""
 # Apply namespace (idempotent)
 # ---------------------------------------------------------------------------
 
-echo "[1/7] Applying namespace..."
+echo "[1/8] Applying namespace..."
 kubectl apply -f "${K8S_DIR}/namespace.yaml"
 
 # ---------------------------------------------------------------------------
 # Create image pull secret for IBM Container Registry (idempotent)
 # ---------------------------------------------------------------------------
 
-echo "[2/7] Image pull secret (optional — ghcr.io image is public)..."
+echo "[2/8] Image pull secret (optional — ghcr.io image is public)..."
 if [[ -n "${IBM_ENTITLEMENT_KEY:-}" && "${IBM_ENTITLEMENT_KEY:-}" != \<* ]]; then
     kubectl create secret docker-registry ibm-entitlement-key \
         --docker-server=ghcr.io \
@@ -149,7 +149,7 @@ fi
 # Create database credentials secret (idempotent)
 # ---------------------------------------------------------------------------
 
-echo "[3/7] Creating database credentials secret..."
+echo "[3/8] Creating database credentials secret..."
 # ContextForge uses psycopg3 (psycopg[c,binary]) — URL scheme must be postgresql+psycopg://.
 # Using postgresql+asyncpg:// or postgresql:// will fail — asyncpg is not installed.
 # CLOUDSQL_CONNECTION_STRING is "<host>:5432/<dbname>" set by gke_provision.sh.
@@ -164,7 +164,7 @@ kubectl create secret generic contextforge-db-credentials \
 # Create Redis credentials secret (idempotent)
 # ---------------------------------------------------------------------------
 
-echo "[4/7] Creating Redis credentials secret..."
+echo "[4/8] Creating Redis credentials secret..."
 # ContextForge expects REDIS_URL in redis:// URI format.
 REDIS_URL="redis://${REDIS_HOST}:${REDIS_PORT}/0"
 kubectl create secret generic contextforge-redis-credentials \
@@ -222,14 +222,47 @@ echo "--- Deploy complete ---"
 echo ""
 kubectl get pods --namespace="${GKE_NAMESPACE}"
 echo ""
-echo "Next steps:"
-echo "  Port-forward and verify health:"
-echo "    kubectl port-forward svc/contextforge-svc 4444:4444 -n ${GKE_NAMESPACE} &"
-echo "    curl http://localhost:4444/health"
+
+# ---------------------------------------------------------------------------
+# Wait for LoadBalancer external IP (GKE provisions it asynchronously)
+# ---------------------------------------------------------------------------
+
+echo "Waiting for LoadBalancer external IP (timeout 120s)..."
+EXTERNAL_IP=""
+for i in $(seq 1 24); do
+    EXTERNAL_IP="$(kubectl get svc contextforge-svc \
+        --namespace="${GKE_NAMESPACE}" \
+        -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
+    if [[ -n "${EXTERNAL_IP}" ]]; then
+        break
+    fi
+    echo "  Waiting... (${i}/24)"
+    sleep 5
+done
+
 echo ""
-echo "  Register proxy and create virtual server:"
-echo "    make register-proxy"
-echo "    make create-virtual-server"
+if [[ -n "${EXTERNAL_IP}" ]]; then
+    echo "=== ContextForge is publicly accessible ==="
+    echo ""
+    echo "  Admin UI : http://${EXTERNAL_IP}/admin"
+    echo "  Health   : http://${EXTERNAL_IP}/health"
+    echo "  API      : http://${EXTERNAL_IP}/api/v1"
+    echo ""
+    echo "  Default credentials: admin / admin  (change immediately)"
+    echo ""
+    # Export for use by register-proxy / create-virtual-server
+    echo "  To use this URL with make targets:"
+    echo "    export TEST_GATEWAY_BASE_URL=http://${EXTERNAL_IP}"
+    echo "    make register-proxy"
+    echo "    make create-virtual-server"
+else
+    echo "WARNING: LoadBalancer IP not yet assigned. Check with:"
+    echo "  kubectl get svc contextforge-svc -n ${GKE_NAMESPACE}"
+    echo ""
+    echo "  Fallback — port-forward:"
+    echo "    kubectl port-forward svc/contextforge-svc 4444:4444 -n ${GKE_NAMESPACE} &"
+fi
+
 echo ""
 echo "  Run integration tests:"
 echo "    TEST_TARGET=gke make test CLUSTER=c2,c3"

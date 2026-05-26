@@ -22,4 +22,4 @@ spec:
               service:
                 name: contextforge-svc
                 port:
-                  number: 4444
+                  number: 80
