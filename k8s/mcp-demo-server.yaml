@@ -79,7 +79,7 @@ spec:
               mountPath: /demo
           readinessProbe:
             httpGet:
-              path: /health
+              path: /healthz
               port: 9000
             initialDelaySeconds: 10
             periodSeconds: 5
@@ -87,7 +87,7 @@ spec:
             failureThreshold: 6
           livenessProbe:
             httpGet:
-              path: /health
+              path: /healthz
               port: 9000
             initialDelaySeconds: 20
             periodSeconds: 10
