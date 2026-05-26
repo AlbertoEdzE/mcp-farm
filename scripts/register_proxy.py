@@ -41,9 +41,65 @@ def _is_placeholder(value: str | None) -> bool:
     return not value or value.startswith("<")
 
 
+def _ensure_port_forward(gateway_url: str) -> None:
+    """Start kubectl port-forward in the background if the gateway is unreachable.
+
+    Only acts when gateway_url targets localhost/127.0.0.1 and the port is
+    not yet open.  Blocks until the port accepts connections (up to 20s).
+    """
+    import socket
+    import subprocess
+    import time
+    from urllib.parse import urlparse
+
+    parsed = urlparse(gateway_url)
+    host = parsed.hostname or "localhost"
+    port = parsed.port or 4444
+
+    if host not in ("localhost", "127.0.0.1"):
+        return
+
+    def _port_open() -> bool:
+        try:
+            with socket.create_connection((host, port), timeout=1):
+                return True
+        except OSError:
+            return False
+
+    if _port_open():
+        return  # Already reachable — nothing to do.
+
+    if not _which("kubectl"):
+        return  # kubectl not available — let the caller surface the error.
+
+    print(f"  Port-forward not active — starting kubectl port-forward svc/contextforge-svc {port}:{port} -n mcp-farm")
+    proc = subprocess.Popen(
+        ["kubectl", "port-forward", "svc/contextforge-svc", f"{port}:{port}", "-n", "mcp-farm"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    import atexit
+    atexit.register(proc.terminate)
+
+    deadline = time.time() + 20
+    while time.time() < deadline:
+        if _port_open():
+            print(f"  Port-forward ready on {host}:{port}")
+            return
+        time.sleep(0.5)
+
+    print("WARNING: Port-forward did not become ready in 20s — continuing anyway.", file=sys.stderr)
+
+
+def _which(cmd: str) -> bool:
+    import shutil
+    return shutil.which(cmd) is not None
+
+
 def _login(gateway_url: str, email: str, password: str) -> str:
     import httpx
 
+    _ensure_port_forward(gateway_url)
     url = gateway_url.rstrip("/") + _LOGIN_ENDPOINT
     try:
         response = httpx.post(
