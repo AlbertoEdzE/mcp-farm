@@ -1,5 +1,6 @@
 .PHONY: help install local-up local-down gke-provision gke-deploy gke-teardown \
-        test lint typecheck generate-data register-proxy create-virtual-server report clean
+        test lint typecheck generate-data register-proxy create-virtual-server \
+        change-admin-password report clean
 
 SHELL  := /bin/bash
 CLUSTER ?= all
@@ -43,6 +44,9 @@ register-proxy: ## Register the GitLab MCP proxy with the running ContextForge C
 
 create-virtual-server: ## Create the test virtual server in the running ContextForge Config Registry
 	@.venv/bin/python scripts/create_virtual_server.py
+
+change-admin-password: ## Change the ContextForge admin password via API (bypasses CSRF)
+	@.venv/bin/python scripts/change_admin_password.py
 
 report: ## Run full test suite and generate reports/validation_report.md (Baptist Health deliverable)
 	@.venv/bin/python scripts/generate_report.py
