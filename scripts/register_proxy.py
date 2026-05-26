@@ -7,10 +7,17 @@ ContextForge to obtain a JWT Bearer token, then POSTs to POST /gateways.
 Q1 resolved 2026-05-25: endpoint is POST /gateways (not /v1/proxies).
 Auth required: Bearer JWT obtained from POST /auth/login.
 
+URL resolution order (first non-placeholder value wins):
+  1. --mcp-url CLI argument
+  2. GITLAB_MCP_URL environment variable
+  3. url field in the fixture file
+  4. http://httpbin.org/ (demo fallback when Q4 is still pending)
+
 Usage:
   python scripts/register_proxy.py
   python scripts/register_proxy.py --fixture tests/fixtures/mcp_proxy_registration.json
   python scripts/register_proxy.py --gateway-url http://localhost:4444
+  python scripts/register_proxy.py --mcp-url https://gitlab.example.com/api/mcp/v1
   python scripts/register_proxy.py --help
 """
 from __future__ import annotations
@@ -24,8 +31,14 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).parent.parent
 _DEFAULT_FIXTURE = _REPO_ROOT / "tests" / "fixtures" / "mcp_proxy_registration.json"
 _DEFAULT_GATEWAY_URL = "http://localhost:4444"
+_DEMO_MCP_URL = "http://httpbin.org/"
 _GATEWAYS_ENDPOINT = "/gateways"
 _LOGIN_ENDPOINT = "/auth/login"
+
+
+def _is_placeholder(value: str | None) -> bool:
+    """Return True if value is unset, empty, or a <...> template placeholder."""
+    return not value or value.startswith("<")
 
 
 def _login(gateway_url: str, email: str, password: str) -> str:
@@ -54,7 +67,13 @@ def _login(gateway_url: str, email: str, password: str) -> str:
     return token
 
 
-def register(fixture_path: Path, gateway_url: str, email: str, password: str) -> None:
+def register(
+    fixture_path: Path,
+    gateway_url: str,
+    email: str,
+    password: str,
+    mcp_url: str | None = None,
+) -> None:
     import httpx
 
     if not fixture_path.is_file():
@@ -64,15 +83,40 @@ def register(fixture_path: Path, gateway_url: str, email: str, password: str) ->
 
     raw = json.loads(fixture_path.read_text())
 
+    # Resolve the MCP server URL.  The fixture URL is Faker-generated (fake
+    # domain) and will fail ContextForge's SSRF_DNS_FAIL_CLOSED check.
+    # Priority: --mcp-url arg > GITLAB_MCP_URL env var > fixture url > demo fallback.
+    resolved_url = (
+        mcp_url
+        if not _is_placeholder(mcp_url)
+        else os.environ.get("GITLAB_MCP_URL", "")
+        if not _is_placeholder(os.environ.get("GITLAB_MCP_URL", ""))
+        else raw.get("url", "")
+        if not _is_placeholder(raw.get("url", ""))
+        else _DEMO_MCP_URL
+    )
+
+    if resolved_url == _DEMO_MCP_URL:
+        print(
+            "WARNING: GITLAB_MCP_URL is not set — using demo placeholder URL "
+            f"({_DEMO_MCP_URL}). Set GITLAB_MCP_URL in .env for a real deployment.",
+            file=sys.stderr,
+        )
+
+    # ContextForge GatewayCreate auth_type enum: basic | bearer | oauth |
+    # authheaders | query_param.  Fixture uses "oauth2"; normalise it.
+    raw_auth_type = raw.get("auth", {}).get("type", "")
+    auth_type = "oauth" if raw_auth_type == "oauth2" else raw_auth_type or None
+
     # Map fixture format to ContextForge GatewayCreate schema.
     # The fixture retains its original structure for test compatibility;
     # the script translates it to what the API actually accepts.
     payload = {
         "name": raw["name"],
-        "url": raw["url"],
+        "url": resolved_url,
         "description": raw.get("description"),
         "transport": raw.get("transport", "SSE").upper(),
-        "auth_type": raw.get("auth", {}).get("type"),
+        "auth_type": auth_type,
     }
 
     token = _login(gateway_url, email, password)
@@ -80,6 +124,7 @@ def register(fixture_path: Path, gateway_url: str, email: str, password: str) ->
     url = gateway_url.rstrip("/") + _GATEWAYS_ENDPOINT
 
     print(f"Registering gateway '{payload['name']}' at {url}")
+    print(f"  MCP server URL : {resolved_url}")
     try:
         response = httpx.post(url, json=payload, headers=headers, timeout=30.0)
     except httpx.ConnectError as exc:
@@ -91,7 +136,7 @@ def register(fixture_path: Path, gateway_url: str, email: str, password: str) ->
     if response.status_code in (200, 201):
         print(json.dumps(response.json(), indent=2))
     elif response.status_code == 422:
-        print(f"ERROR: Validation error — check fixture payload.", file=sys.stderr)
+        print("ERROR: Validation error — check fixture payload.", file=sys.stderr)
         print(response.text, file=sys.stderr)
         sys.exit(1)
     else:
@@ -117,6 +162,11 @@ def main() -> None:
         help=f"ContextForge base URL (default: {_DEFAULT_GATEWAY_URL})",
     )
     parser.add_argument(
+        "--mcp-url",
+        default=None,
+        help="Override the MCP server URL registered in ContextForge (overrides GITLAB_MCP_URL env var and fixture url field)",
+    )
+    parser.add_argument(
         "--email",
         default=os.environ.get("CF_ADMIN_EMAIL", "admin@example.com"),
         help="ContextForge admin email (default: admin@example.com)",
@@ -135,6 +185,7 @@ def main() -> None:
         gateway_url=args.gateway_url,
         email=args.email,
         password=args.password,
+        mcp_url=args.mcp_url,
     )
     print()
     print("Done. Run 'make test CLUSTER=c4' to validate.")
