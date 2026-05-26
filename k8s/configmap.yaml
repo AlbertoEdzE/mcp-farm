@@ -16,3 +16,6 @@ data:
   # Allow ContextForge to connect to internal k8s service IPs for gateway registration.
   # Required for the demo MCP server at mcp-demo-svc.mcp-farm.svc.cluster.local:9000.
   SSRF_ALLOW_PRIVATE_NETWORKS: "true"
+  # Enable the Admin UI and Admin API — both default to false in ContextForge.
+  MCPGATEWAY_UI_ENABLED: "true"
+  MCPGATEWAY_ADMIN_API_ENABLED: "true"

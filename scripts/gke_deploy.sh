@@ -227,16 +227,16 @@ echo ""
 # Wait for LoadBalancer external IP (GKE provisions it asynchronously)
 # ---------------------------------------------------------------------------
 
-echo "Waiting for LoadBalancer external IP (timeout 120s)..."
+echo "Waiting for LoadBalancer external IP (timeout 180s)..."
 EXTERNAL_IP=""
-for i in $(seq 1 24); do
+for i in $(seq 1 36); do
     EXTERNAL_IP="$(kubectl get svc contextforge-svc \
         --namespace="${GKE_NAMESPACE}" \
         -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
     if [[ -n "${EXTERNAL_IP}" ]]; then
         break
     fi
-    echo "  Waiting... (${i}/24)"
+    echo "  Waiting... (${i}/36)"
     sleep 5
 done
 
