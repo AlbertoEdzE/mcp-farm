@@ -122,12 +122,13 @@ def create(fixture_path: Path, gateway_url: str, email: str, password: str) -> N
     raw = json.loads(fixture_path.read_text())
 
     # Map fixture format to ContextForge ServerCreate schema.
-    # ServerCreate expects name, description, and optionally tags.
+    # POST /servers wraps the server object under a "server" key.
     # Tools are registered separately and linked by ID — not included at creation time.
     payload = {
-        "name": raw["name"],
-        "description": raw.get("description"),
-        "tags": ["mcp-farm", "test"],
+        "server": {
+            "name": raw["name"],
+            "description": raw.get("description"),
+        }
     }
 
     token = _login(gateway_url, email, password)
