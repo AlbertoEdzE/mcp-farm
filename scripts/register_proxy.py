@@ -31,7 +31,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).parent.parent
 _DEFAULT_FIXTURE = _REPO_ROOT / "tests" / "fixtures" / "mcp_proxy_registration.json"
 _DEFAULT_GATEWAY_URL = "http://localhost:4444"
-_DEMO_MCP_URL = "http://httpbin.org/"
+_DEMO_MCP_URL = "http://mcp-demo-svc.mcp-farm.svc.cluster.local:9000/sse"
 _GATEWAYS_ENDPOINT = "/gateways"
 _LOGIN_ENDPOINT = "/auth/login"
 
@@ -96,8 +96,8 @@ def register(
 
     if resolved_url == _DEMO_MCP_URL:
         print(
-            "WARNING: GITLAB_MCP_URL is not set — using demo placeholder URL "
-            f"({_DEMO_MCP_URL}). Set GITLAB_MCP_URL in .env for a real deployment.",
+            "WARNING: GITLAB_MCP_URL is not set — using in-cluster demo MCP server "
+            f"({_DEMO_MCP_URL}). Set GITLAB_MCP_URL in .env once Q4 is resolved.",
             file=sys.stderr,
         )
 

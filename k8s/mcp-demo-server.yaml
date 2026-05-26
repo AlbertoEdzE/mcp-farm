@@ -1,0 +1,124 @@
+---
+# Demo MCP server — used as the registered gateway when GITLAB_MCP_URL is not set.
+#
+# Runs mcpgateway.translate wrapping a tiny FastMCP server (two demo tools:
+# gitlab_search and gitlab_list_projects).  The SSE endpoint is exposed at
+# http://mcp-demo-svc.mcp-farm.svc.cluster.local:9000/sse and registered as
+# the proxy URL by scripts/register_proxy.py when Q4 is still pending.
+#
+# Uses the same ghcr.io/ibm/mcp-context-forge image already pulled for the
+# main deployment — no additional image pull required.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-demo-server-script
+  namespace: mcp-farm
+  labels:
+    app: mcp-demo-server
+    project: mcp-farm
+data:
+  server.py: |
+    #!/usr/bin/env python3
+    """Minimal FastMCP demo server — two GitLab stub tools for demo purposes."""
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("gitlab-demo-mcp")
+
+    @mcp.tool()
+    def gitlab_search(query: str) -> str:
+        """Search GitLab repositories and issues."""
+        return f"[demo] GitLab search results for: {query}"
+
+    @mcp.tool()
+    def gitlab_list_projects() -> str:
+        """List accessible GitLab projects."""
+        return "[demo] Available projects: mcp-farm, baptist-health-ai"
+
+    if __name__ == "__main__":
+        mcp.run(transport="stdio")
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-demo-server
+  namespace: mcp-farm
+  labels:
+    app: mcp-demo-server
+    project: mcp-farm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-demo-server
+  template:
+    metadata:
+      labels:
+        app: mcp-demo-server
+    spec:
+      containers:
+        - name: mcp-demo-server
+          image: "ghcr.io/ibm/mcp-context-forge:latest"
+          imagePullPolicy: IfNotPresent
+          command: ["python3", "-m", "mcpgateway.translate"]
+          args:
+            - "--stdio"
+            - "python3 /demo/server.py"
+            - "--expose-sse"
+            - "--expose-streamable-http"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "9000"
+          ports:
+            - name: sse
+              containerPort: 9000
+              protocol: TCP
+          volumeMounts:
+            - name: demo-script
+              mountPath: /demo
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: demo-script
+          configMap:
+            name: mcp-demo-server-script
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-demo-svc
+  namespace: mcp-farm
+  labels:
+    app: mcp-demo-server
+    project: mcp-farm
+spec:
+  selector:
+    app: mcp-demo-server
+  ports:
+    - name: sse
+      port: 9000
+      targetPort: 9000
+  type: ClusterIP

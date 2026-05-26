@@ -176,17 +176,24 @@ kubectl create secret generic contextforge-redis-credentials \
 # Apply Kubernetes manifests
 # ---------------------------------------------------------------------------
 
-echo "[5/7] Applying Kubernetes manifests..."
+echo "[5/8] Applying Kubernetes manifests..."
 kubectl apply -f "${K8S_DIR}/configmap.yaml"
 kubectl apply -f "${K8S_DIR}/deployment.yaml"
 kubectl apply -f "${K8S_DIR}/service.yaml"
 kubectl apply -f "${K8S_DIR}/ingress.yaml"
 
 # ---------------------------------------------------------------------------
+# Deploy demo MCP server (used by register-proxy when GITLAB_MCP_URL is unset)
+# ---------------------------------------------------------------------------
+
+echo "[6/8] Deploying demo MCP server (mcp-demo-svc)..."
+kubectl apply -f "${K8S_DIR}/mcp-demo-server.yaml"
+
+# ---------------------------------------------------------------------------
 # Patch the deployment with the real image URI
 # ---------------------------------------------------------------------------
 
-echo "[6/7] Patching deployment image to ${CF_IMAGE_URI}:${CF_IMAGE_TAG}..."
+echo "[7/8] Patching deployment image to ${CF_IMAGE_URI}:${CF_IMAGE_TAG}..."
 kubectl set image deployment/contextforge \
     contextforge="${CF_IMAGE_URI}:${CF_IMAGE_TAG}" \
     --namespace="${GKE_NAMESPACE}"
@@ -195,7 +202,7 @@ kubectl set image deployment/contextforge \
 # Wait for rollout
 # ---------------------------------------------------------------------------
 
-echo "[7/7] Waiting for rollout (timeout 300s)..."
+echo "[8/8] Waiting for rollout (timeout 300s)..."
 kubectl rollout status deployment/contextforge \
     --namespace="${GKE_NAMESPACE}" \
     --timeout=300s
@@ -210,9 +217,13 @@ echo ""
 kubectl get pods --namespace="${GKE_NAMESPACE}"
 echo ""
 echo "Next steps:"
-echo "  Verify health endpoints:"
-echo "    kubectl port-forward svc/contextforge-svc 8080:8080 -n ${GKE_NAMESPACE}"
-echo "    curl http://localhost:8080/health"
+echo "  Port-forward and verify health:"
+echo "    kubectl port-forward svc/contextforge-svc 4444:4444 -n ${GKE_NAMESPACE} &"
+echo "    curl http://localhost:4444/health"
 echo ""
-echo "  Run integration tests against GKE:"
+echo "  Register proxy and create virtual server:"
+echo "    make register-proxy"
+echo "    make create-virtual-server"
+echo ""
+echo "  Run integration tests:"
 echo "    TEST_TARGET=gke make test CLUSTER=c2,c3"
