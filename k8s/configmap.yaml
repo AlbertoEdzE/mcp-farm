@@ -23,3 +23,6 @@ data:
   # Cloud Shell Web Preview HTTP proxy. See k-mcp-farm README line 804 and
   # the "Serving over HTTP" warning shown on the login page.
   SECURE_COOKIES: "false"
+  # Trust the Cloud Shell Web Preview origin so the CSRF origin check passes.
+  # The 726073937637 segment is stable per Cloud Shell user session.
+  ALLOWED_ORIGINS: "https://8080-cs-726073937637-default.cs-us-east1-vpcf.cloudshell.dev"
