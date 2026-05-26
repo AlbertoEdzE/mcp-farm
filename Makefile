@@ -1,6 +1,6 @@
 .PHONY: help install local-up local-down gke-provision gke-deploy gke-teardown \
         test lint typecheck generate-data register-proxy create-virtual-server \
-        change-admin-password report clean
+        change-admin-password demo-start report clean
 
 SHELL  := /bin/bash
 CLUSTER ?= all
@@ -47,6 +47,9 @@ create-virtual-server: ## Create the test virtual server in the running ContextF
 
 change-admin-password: ## Change the ContextForge admin password via API (bypasses CSRF)
 	@.venv/bin/python scripts/change_admin_password.py
+
+demo-start: ## Start port-forward and verify pod health for the Chakri demo (run in Cloud Shell)
+	@bash scripts/demo_start.sh
 
 report: ## Run full test suite and generate reports/validation_report.md (Baptist Health deliverable)
 	@.venv/bin/python scripts/generate_report.py
