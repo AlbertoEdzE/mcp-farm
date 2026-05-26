@@ -226,8 +226,10 @@ echo ""
 
 # ---------------------------------------------------------------------------
 # Wait for GCE Application Load Balancer IP (Ingress — provisioned asynchronously)
-# GCP L4 Network LBs are blocked by org policy (restrictLoadBalancerCreationForTypes).
-# The GCE Ingress controller provisions an L7 Application LB which is allowed.
+# GCP org policy (restrictLoadBalancerCreationForTypes) on x-ai-engineering blocks
+# BOTH L4 (EXTERNAL_NETWORK_TCP_UDP) and L7 (EXTERNAL_HTTP_HTTPS) external LBs.
+# The ingress IP will only appear after a policy exemption is granted.
+# See doc/ADR/ for the exemption request details.
 # First-time provisioning takes 5-10 minutes.
 # ---------------------------------------------------------------------------
 
