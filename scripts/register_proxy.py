@@ -83,16 +83,14 @@ def register(
 
     raw = json.loads(fixture_path.read_text())
 
-    # Resolve the MCP server URL.  The fixture URL is Faker-generated (fake
-    # domain) and will fail ContextForge's SSRF_DNS_FAIL_CLOSED check.
-    # Priority: --mcp-url arg > GITLAB_MCP_URL env var > fixture url > demo fallback.
+    # Resolve the MCP server URL.  The fixture url field is always a
+    # Faker-generated fake domain that fails ContextForge's SSRF_DNS_FAIL_CLOSED
+    # check — it is never used as the registered URL.
+    # Priority: --mcp-url arg > GITLAB_MCP_URL env var > demo fallback.
+    env_mcp_url = os.environ.get("GITLAB_MCP_URL", "")
     resolved_url = (
-        mcp_url
-        if not _is_placeholder(mcp_url)
-        else os.environ.get("GITLAB_MCP_URL", "")
-        if not _is_placeholder(os.environ.get("GITLAB_MCP_URL", ""))
-        else raw.get("url", "")
-        if not _is_placeholder(raw.get("url", ""))
+        mcp_url if not _is_placeholder(mcp_url)
+        else env_mcp_url if not _is_placeholder(env_mcp_url)
         else _DEMO_MCP_URL
     )
 
