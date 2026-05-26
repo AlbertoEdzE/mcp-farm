@@ -51,13 +51,27 @@ ACCEPTANCE_CRITERIA: list[tuple[int, str, str]] = [
 ]
 
 OPEN_QUESTIONS: list[tuple[str, str]] = [
-    ("Q1", "Resolved — ghcr.io/ibm/mcp-context-forge:latest (Apache 2.0, public image)"),
-    ("Q2", "Resolved — x-ai-engineering (project number 1030710021223)"),
-    ("Q3", "Assumed — gateway.expose_container_port: true (see ADR-001)"),
-    ("Q4", "Pending — GITLAB_OAUTH_CLIENT_ID / GITLAB_OAUTH_CLIENT_SECRET (Bala)"),
-    ("Q5", "Pending — Secret Manager vs Kubernetes Secrets decision (Chakri)"),
-    ("Q6", "Pending — GKE_NODE_MACHINE_TYPE / GKE_NODE_COUNT (Lakshman)"),
+    ("Container image",    "Resolved — ghcr.io/ibm/mcp-context-forge:latest (Apache 2.0, public)"),
+    ("GCP project",        "Resolved — x-ai-engineering (project 1030710021223)"),
+    ("Port configuration", "Resolved — single port 4444, HOST=0.0.0.0 (see ADR-001)"),
+    ("GitLab OAuth",       "Pending — client ID and secret needed from Bala"),
+    ("Secret storage",     "Pending — Secret Manager vs Kubernetes Secrets decision from Chakri"),
+    ("Node sizing",        "Pending — machine type and node count confirmation from Lakshman"),
 ]
+
+
+def _detect_target() -> str:
+    """Return 'gke' if kubectl context points at a GKE cluster, else 'local'."""
+    try:
+        result = subprocess.run(
+            ["kubectl", "config", "current-context"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and "gke_" in result.stdout:
+            return "gke"
+    except Exception:
+        pass
+    return "local"
 
 
 def _parse_args() -> argparse.Namespace:
@@ -69,9 +83,9 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--target",
-        default=os.environ.get("TEST_TARGET", "local"),
+        default=os.environ.get("TEST_TARGET") or _detect_target(),
         choices=["local", "gke"],
-        help="Deployment target (default: local)",
+        help="Deployment target — auto-detected from kubectl context if not set",
     )
     return parser.parse_args()
 
@@ -188,7 +202,7 @@ def _write_report(
         "|--------|-------|",
         f"| Total  | {total} |",
         f"| Passed | {passed} |",
-        f"| Skipped (stack not running) | {skipped} |",
+        f"| Skipped (live API connection required) | {skipped} |",
         f"| Failed | {failed} |",
         f"| Suite exit code | {pytest_exit_code} |",
         "",
@@ -249,11 +263,11 @@ def _write_report(
         "",
         "## Open Questions",
         "",
-        "| ID | Status |",
-        "|----|--------|",
+        "| Item | Status |",
+        "|------|--------|",
     ]
-    for qid, status in OPEN_QUESTIONS:
-        lines.append(f"| {qid} | {status} |")
+    for item, status in OPEN_QUESTIONS:
+        lines.append(f"| {item} | {status} |")
 
     lines += [
         "",
