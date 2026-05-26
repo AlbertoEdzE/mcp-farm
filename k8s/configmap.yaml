@@ -19,3 +19,7 @@ data:
   # Enable the Admin UI and Admin API — both default to false in ContextForge.
   MCPGATEWAY_UI_ENABLED: "true"
   MCPGATEWAY_ADMIN_API_ENABLED: "true"
+  # Disable secure-only cookie flag so cookies are transmitted through the
+  # Cloud Shell Web Preview HTTP proxy. See k-mcp-farm README line 804 and
+  # the "Serving over HTTP" warning shown on the login page.
+  SECURE_COOKIES: "false"

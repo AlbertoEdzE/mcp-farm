@@ -93,7 +93,7 @@ def main() -> None:
         resp = httpx.post(
             base + _CHANGE_PASSWORD_ENDPOINT,
             headers={"Authorization": f"Bearer {token}"},
-            json={"current_password": args.current_password, "new_password": new_password},
+            json={"old_password": args.current_password, "new_password": new_password},
             timeout=10.0,
         )
     except httpx.ConnectError as exc:
