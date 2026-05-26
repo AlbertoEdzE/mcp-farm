@@ -135,7 +135,7 @@ def create(fixture_path: Path, gateway_url: str, email: str, password: str) -> N
     headers = {"Authorization": f"Bearer {token}"}
     url = gateway_url.rstrip("/") + _SERVERS_ENDPOINT
 
-    print(f"Creating virtual server '{payload['name']}' at {url}")
+    print(f"Creating virtual server '{payload['server']['name']}' at {url}")
     try:
         response = httpx.post(url, json=payload, headers=headers, timeout=30.0)
     except httpx.ConnectError as exc:
