@@ -143,8 +143,8 @@ class TestMCPProxyStructure:
         assert "--fixture" in result.stdout, (
             "register_proxy.py --help must document the --fixture option."
         )
-        assert "--registry-url" in result.stdout, (
-            "register_proxy.py --help must document the --registry-url option."
+        assert "--gateway-url" in result.stdout, (
+            "register_proxy.py --help must document the --gateway-url option."
         )
 
     def test_makefile_has_register_proxy_target(self) -> None:

@@ -182,8 +182,8 @@ class TestVirtualServerStructure:
         assert "--fixture" in result.stdout, (
             "create_virtual_server.py --help must document the --fixture option."
         )
-        assert "--registry-url" in result.stdout, (
-            "create_virtual_server.py --help must document the --registry-url option."
+        assert "--gateway-url" in result.stdout, (
+            "create_virtual_server.py --help must document the --gateway-url option."
         )
 
     def test_makefile_has_create_virtual_server_target(self) -> None:
