@@ -178,6 +178,7 @@ kubectl create secret generic contextforge-redis-credentials \
 
 echo "[5/8] Applying Kubernetes manifests..."
 kubectl apply -f "${K8S_DIR}/configmap.yaml"
+kubectl apply -f "${K8S_DIR}/backend-config.yaml"
 kubectl apply -f "${K8S_DIR}/deployment.yaml"
 kubectl apply -f "${K8S_DIR}/service.yaml"
 kubectl apply -f "${K8S_DIR}/ingress.yaml"
@@ -224,19 +225,22 @@ kubectl get pods --namespace="${GKE_NAMESPACE}"
 echo ""
 
 # ---------------------------------------------------------------------------
-# Wait for LoadBalancer external IP (GKE provisions it asynchronously)
+# Wait for GCE Application Load Balancer IP (Ingress — provisioned asynchronously)
+# GCP L4 Network LBs are blocked by org policy (restrictLoadBalancerCreationForTypes).
+# The GCE Ingress controller provisions an L7 Application LB which is allowed.
+# First-time provisioning takes 5-10 minutes.
 # ---------------------------------------------------------------------------
 
-echo "Waiting for LoadBalancer external IP (timeout 180s)..."
+echo "Waiting for GCE Ingress external IP (timeout 600s — first provision takes ~5-10 min)..."
 EXTERNAL_IP=""
-for i in $(seq 1 36); do
-    EXTERNAL_IP="$(kubectl get svc contextforge-svc \
+for i in $(seq 1 120); do
+    EXTERNAL_IP="$(kubectl get ingress contextforge-ingress \
         --namespace="${GKE_NAMESPACE}" \
         -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
     if [[ -n "${EXTERNAL_IP}" ]]; then
         break
     fi
-    echo "  Waiting... (${i}/36)"
+    echo "  Waiting... (${i}/120 — elapsed $((i * 5))s)"
     sleep 5
 done
 
@@ -248,19 +252,21 @@ if [[ -n "${EXTERNAL_IP}" ]]; then
     echo "  Health   : http://${EXTERNAL_IP}/health"
     echo "  API      : http://${EXTERNAL_IP}/api/v1"
     echo ""
-    echo "  Default credentials: admin / admin  (change immediately)"
+    echo "  Default credentials: admin@example.com / changeme  (change on first login)"
     echo ""
-    # Export for use by register-proxy / create-virtual-server
     echo "  To use this URL with make targets:"
     echo "    export TEST_GATEWAY_BASE_URL=http://${EXTERNAL_IP}"
     echo "    make register-proxy"
     echo "    make create-virtual-server"
 else
-    echo "WARNING: LoadBalancer IP not yet assigned. Check with:"
-    echo "  kubectl get svc contextforge-svc -n ${GKE_NAMESPACE}"
+    echo "WARNING: Ingress IP not yet assigned after 600s."
+    echo "  GCE ALB provisioning is still in progress. Check with:"
+    echo "  kubectl get ingress contextforge-ingress -n ${GKE_NAMESPACE}"
+    echo "  kubectl describe ingress contextforge-ingress -n ${GKE_NAMESPACE}"
     echo ""
-    echo "  Fallback — port-forward:"
+    echo "  Fallback — port-forward while waiting:"
     echo "    kubectl port-forward svc/contextforge-svc 4444:4444 -n ${GKE_NAMESPACE} &"
+    echo "    curl http://localhost:4444/health"
 fi
 
 echo ""

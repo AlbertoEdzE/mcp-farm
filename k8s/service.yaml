@@ -6,8 +6,13 @@ metadata:
   labels:
     app: contextforge
     project: mcp-farm
+  annotations:
+    # Container-native load balancing: GKE routes directly to pod IPs via NEG.
+    cloud.google.com/neg: '{"ingress": true}'
+    # Tell the GCE L7 LB which BackendConfig to use for health checks.
+    cloud.google.com/backend-config: '{"default": "contextforge-backend-config"}'
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: contextforge
   ports:
