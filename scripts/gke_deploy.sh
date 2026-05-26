@@ -181,6 +181,9 @@ kubectl apply -f "${K8S_DIR}/configmap.yaml"
 kubectl apply -f "${K8S_DIR}/deployment.yaml"
 kubectl apply -f "${K8S_DIR}/service.yaml"
 kubectl apply -f "${K8S_DIR}/ingress.yaml"
+# Force a rollout so the pod picks up any configmap changes even when the
+# image tag has not changed (kubectl set image is a no-op in that case).
+kubectl rollout restart deployment/contextforge --namespace="${GKE_NAMESPACE}"
 
 # ---------------------------------------------------------------------------
 # Deploy demo MCP server (used by register-proxy when GITLAB_MCP_URL is unset)
@@ -199,11 +202,14 @@ kubectl set image deployment/contextforge \
     --namespace="${GKE_NAMESPACE}"
 
 # ---------------------------------------------------------------------------
-# Wait for rollout
+# Wait for both deployments to be ready
 # ---------------------------------------------------------------------------
 
-echo "[8/8] Waiting for rollout (timeout 300s)..."
+echo "[8/8] Waiting for rollouts (timeout 300s)..."
 kubectl rollout status deployment/contextforge \
+    --namespace="${GKE_NAMESPACE}" \
+    --timeout=300s
+kubectl rollout status deployment/mcp-demo-server \
     --namespace="${GKE_NAMESPACE}" \
     --timeout=300s
 
