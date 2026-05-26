@@ -341,14 +341,23 @@ class TestSecurityBaseline:
         )
 
     def test_no_forbidden_filenames(self) -> None:
-        """Specific filenames that must not be committed must not exist (except as .example)."""
-        found = []
-        for forbidden in FORBIDDEN_FILENAMES:
-            path = _REPO_ROOT / forbidden
-            if path.exists():
-                found.append(forbidden)
+        """Specific filenames that must not be committed must not appear in git-tracked files.
+
+        The files may exist on disk (e.g. .env is required locally) but must
+        never be committed to the repository.
+        """
+        import subprocess
+
+        result = subprocess.run(
+            ["git", "ls-files"],
+            capture_output=True,
+            text=True,
+            cwd=_REPO_ROOT,
+        )
+        tracked = set(result.stdout.splitlines())
+        found = [f for f in FORBIDDEN_FILENAMES if f in tracked]
         assert not found, (
-            f"Forbidden files found: {found}. "
+            f"Forbidden files found in git: {found}. "
             "These files must not be committed per doc/Specify.md Section 2."
         )
 
