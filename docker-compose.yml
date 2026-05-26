@@ -37,7 +37,7 @@ services:
       PORT: "${PORT:-4444}"
       HOST: "${HOST:-0.0.0.0}"
       # SQLAlchemy asyncpg URL — ContextForge uses DATABASE_URL, not CLOUDSQL_* vars.
-      DATABASE_URL: "postgresql+asyncpg://${CLOUDSQL_USER}:${CLOUDSQL_PASSWORD}@postgres:5432/${CLOUDSQL_DATABASE_NAME:-contextforge}"
+      DATABASE_URL: "postgresql+psycopg://${CLOUDSQL_USER}:${CLOUDSQL_PASSWORD}@postgres:5432/${CLOUDSQL_DATABASE_NAME:-contextforge}"
       # Redis URI — ContextForge uses REDIS_URL, not REDIS_HOST/REDIS_PORT vars.
       REDIS_URL: "redis://redis:6379/0"
     depends_on:

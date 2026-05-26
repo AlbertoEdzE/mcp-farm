@@ -150,10 +150,11 @@ fi
 # ---------------------------------------------------------------------------
 
 echo "[3/7] Creating database credentials secret..."
-# ContextForge expects DATABASE_URL in SQLAlchemy asyncpg format.
+# ContextForge uses psycopg3 (psycopg[c,binary]) — URL scheme must be postgresql+psycopg://.
+# Using postgresql+asyncpg:// or postgresql:// will fail — asyncpg is not installed.
 # CLOUDSQL_CONNECTION_STRING is "<host>:5432/<dbname>" set by gke_provision.sh.
 CLOUDSQL_IP="${CLOUDSQL_CONNECTION_STRING%%:*}"
-DATABASE_URL="postgresql+asyncpg://${CLOUDSQL_USER}:${CLOUDSQL_PASSWORD}@${CLOUDSQL_IP}:5432/${CLOUDSQL_DATABASE_NAME}"
+DATABASE_URL="postgresql+psycopg://${CLOUDSQL_USER}:${CLOUDSQL_PASSWORD}@${CLOUDSQL_IP}:5432/${CLOUDSQL_DATABASE_NAME}"
 kubectl create secret generic contextforge-db-credentials \
     --from-literal=DATABASE_URL="${DATABASE_URL}" \
     --namespace="${GKE_NAMESPACE}" \
