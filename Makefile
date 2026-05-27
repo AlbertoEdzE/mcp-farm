@@ -40,13 +40,13 @@ generate-data: ## Generate deterministic synthetic test data fixtures
 	@.venv/bin/python scripts/generate_synthetic_data.py
 
 register-proxy: ## Register the GitLab MCP proxy with the running ContextForge Config Registry
-	@.venv/bin/python scripts/register_proxy.py
+	@bash -c 'set -a; [ -f .env ] && source .env; set +a; .venv/bin/python scripts/register_proxy.py'
 
 create-virtual-server: ## Create the test virtual server in the running ContextForge Config Registry
-	@.venv/bin/python scripts/create_virtual_server.py
+	@bash -c 'set -a; [ -f .env ] && source .env; set +a; .venv/bin/python scripts/create_virtual_server.py'
 
 change-admin-password: ## Change the ContextForge admin password via API (bypasses CSRF)
-	@.venv/bin/python scripts/change_admin_password.py
+	@bash -c 'set -a; [ -f .env ] && source .env; set +a; .venv/bin/python scripts/change_admin_password.py'
 
 demo-start: ## Start port-forward and verify pod health for the Chakri demo (run in Cloud Shell)
 	@bash scripts/demo_start.sh
