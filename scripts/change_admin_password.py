@@ -22,6 +22,29 @@ _LOGIN_ENDPOINT = "/auth/login"
 _CHANGE_PASSWORD_ENDPOINT = "/auth/email/change-password"
 
 
+def _update_env_file(new_password: str) -> None:
+    """Write the new password into .env so subsequent make targets pick it up."""
+    env_file = _REPO_ROOT / ".env"
+    if not env_file.is_file():
+        return
+
+    lines = env_file.read_text().splitlines(keepends=True)
+    updated = False
+    new_lines = []
+    for line in lines:
+        if line.startswith("CF_ADMIN_PASSWORD="):
+            new_lines.append(f"CF_ADMIN_PASSWORD={new_password}\n")
+            updated = True
+        else:
+            new_lines.append(line)
+
+    if not updated:
+        new_lines.append(f"CF_ADMIN_PASSWORD={new_password}\n")
+
+    env_file.write_text("".join(new_lines))
+    print(f".env updated: CF_ADMIN_PASSWORD written.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -102,6 +125,7 @@ def main() -> None:
 
     if resp.status_code in (200, 201, 204):
         print("Password changed successfully.")
+        _update_env_file(new_password)
         print(f"Log in at the Admin UI with: {args.email} / <your new password>")
     elif resp.status_code == 422:
         print(f"ERROR: Password rejected — check requirements: {resp.text}", file=sys.stderr)
