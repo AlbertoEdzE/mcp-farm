@@ -60,9 +60,9 @@ def _ensure_port_forward(gateway_url: str) -> None:
     if not _which("kubectl"):
         return
 
-    print(f"  Port-forward not active — starting kubectl port-forward svc/contextforge-svc {port}:{port} -n mcp-farm")
+    print(f"  Port-forward not active — starting kubectl port-forward svc/contextforge-svc {port}:80 -n mcp-farm")
     proc = subprocess.Popen(
-        ["kubectl", "port-forward", "svc/contextforge-svc", f"{port}:{port}", "-n", "mcp-farm"],
+        ["kubectl", "port-forward", "svc/contextforge-svc", f"{port}:80", "-n", "mcp-farm"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
@@ -97,7 +97,7 @@ def _login(gateway_url: str, email: str, password: str) -> str:
         )
     except httpx.ConnectError as exc:
         print(f"ERROR: Could not connect to ContextForge at {url}: {exc}", file=sys.stderr)
-        print("Ensure port-forward is active: kubectl port-forward svc/contextforge-svc 4444:4444 -n mcp-farm", file=sys.stderr)
+        print("Ensure port-forward is active: kubectl port-forward svc/contextforge-svc 4444:80 -n mcp-farm", file=sys.stderr)
         sys.exit(1)
 
     if response.status_code != 200:
